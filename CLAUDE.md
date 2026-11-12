@@ -20,7 +20,8 @@ phòng thủ tốt nhất.
 | Mốc | Nội dung | Trạng thái |
 |-----|----------|------------|
 | 1 | Luật cờ: `board.js`, `movegen.js`, test | **Xong** |
-| 2 | Ô lỗ `x`, bộ giải alpha-beta + bảng băm `solver.js` | **Đang làm**: solver xong; còn `levels.json`, script kiểm tra, soạn 50 level |
+| 2 | Ô lỗ `x`, bộ giải alpha-beta + bảng băm `solver.js` | **Xong** |
+| 2b | Sinh level tự động, `levels.json` (60 chính + 30 Daily), `verify-levels` | **Xong** (chủ dự án gọi là "Mốc 3") |
 | 3 | Màn chơi: vẽ bàn, chọn quân, máy trạng thái, đối thủ đáp trả | Chưa |
 | 4 | Tiến trình: Home, chọn level, mở khoá, Daily, lưu localStorage | Chưa |
 | 5 | Kinh tế: coin, gợi ý 3 mức, quảng cáo/Shop giả lập | Chưa |
@@ -30,7 +31,8 @@ phòng thủ tốt nhất.
 
 ```
 CLAUDE.md          # file này
-package.json       # "type": "module", script `npm test`
+package.json       # "type": "module", script test / levels:generate / levels:verify
+levels.json        # 60 level chính + 30 level Daily (SINH bằng tools/, không sửa tay)
 src/
   board.js         # trạng thái bàn, FEN mở rộng, make/undo (không biết luật đi)
   movegen.js       # sinh nước hợp lệ, inCheck, isCheckmate, isStalemate, perft
@@ -39,11 +41,15 @@ tests/
   board.test.js    # FEN (kể cả lỗ 'x'), đánh số ô, make/undo
   movegen.test.js  # level mẫu, 6 thế đếm tay, pat, phong cấp, nhập thành, lỗ, perft
   solver.test.js   # 3 thế cờ chép từ ảnh game gốc + chấm nước, đáp trả, gợi ý
+  levels.test.js   # chạy verify-levels trên levels.json + test bộ kiểm tra bắt được lỗi
+tools/
+  level-check.js   # tiêu chuẩn puzzle dùng chung: analyzePuzzle, positionProblem, difficultyScore
+  generate-levels.js  # sinh thế ngẫu nhiên có seed → lọc → rút gọn → chọn → levels.json
+  verify-levels.js # kiểm tra toàn bộ levels.json, thoát mã 1 nếu có lỗi
 ```
 
 Các file sẽ thêm ở mốc sau (theo GDD mục 8.1): `src/puzzle.js`,
-`src/economy.js`, `src/progress.js`, `src/storage.js`, `src/ui/*.js`,
-`levels.json`, `index.html`.
+`src/economy.js`, `src/progress.js`, `src/storage.js`, `src/ui/*.js`, `index.html`.
 
 **Nguyên tắc kiến trúc:** phần luật và AI (`board.js`, `movegen.js`, `solver.js`,
 `puzzle.js`, ...) **không được** đụng tới DOM, `window`, `localStorage`, để chạy
@@ -94,6 +100,26 @@ Các file sẽ thêm ở mốc sau (theo GDD mục 8.1): `src/puzzle.js`,
   - Ví dụ mate in 2: đầu level `bestHint(b, 3)`; người chơi đi xong
     `isStillWinning(b, 2)`, rồi `bestDefense(b, 2)`; tới nước cuối `bestHint(b, 1)`.
 
+## Level (levels.json)
+
+- **Không chép level từ game gốc.** Mọi level do `tools/generate-levels.js` sinh
+  ngẫu nhiên rồi lọc bằng bộ giải. `verify-levels` còn so với `ORIGINAL_POSITIONS`
+  (3 thế chép từ ảnh, chỉ dùng trong test solver) để chắc không trùng.
+- **Tiêu chuẩn puzzle** (`tools/level-check.js`): mỗi bên 1 Vua, không bên nào
+  đang bị chiếu, Tốt không ở hàng đầu/cuối; chiếu hết ĐÚNG N nước (không sớm
+  hơn); nước đầu duy nhất. Sau khi lọc còn bước rút gọn: bỏ mọi quân thừa.
+- **Định dạng một level:** `{ id, chapter, width, height, fen, mateIn, attacker, solution, difficulty }`.
+  `fen` dạng gọn `"rows w"`; `solution` là biến chính đủ `2N-1` ply (bên phòng
+  thủ đáp tốt nhất, hòa điểm lấy nước đầu); game thật chấm bằng `isStillWinning`
+  nên cách giải khác vẫn được tính. Daily có `id` dạng `"daily-01"`, không có `chapter`.
+- **Bố cục:** chương 1–4 = mate in 1–4 (15/20/15/10 level). 5 level đầu giới thiệu
+  R, Q, N, B, P (Trắng đi, chỉ 1 quân tấn công, level Tốt giải bằng phong cấp).
+  Trong chương: chọn trải đều theo `difficulty`, xếp tăng dần kiểu răng cưa
+  (cứ 3 level chèn 1 level dễ). Daily: 8/14/8 level mate in 1/2/3.
+- **Sinh lại:** `npm run levels:generate` (seed mặc định 20261112, khoảng 100 giây,
+  cùng seed ra cùng file), rồi `npm run levels:verify`. Đổi tiêu chuẩn trong
+  `level-check.js` thì phải sinh lại và chạy test.
+
 ## Quy ước code
 
 - ES module (`import`/`export`), đường dẫn import có đuôi `.js`.
@@ -108,8 +134,10 @@ Các file sẽ thêm ở mốc sau (theo GDD mục 8.1): `src/puzzle.js`,
 ## Lệnh
 
 ```bash
-npm test          # = node --test, chạy mọi file tests/*.test.js
+npm test                 # = node --test, chạy mọi file tests/*.test.js
+npm run levels:generate  # sinh lại levels.json (khoảng 100 giây)
+npm run levels:verify    # kiểm tra levels.json (khoảng 8 giây)
 ```
 
-Test hiện có 50 ca, chạy khoảng 1,5 giây. Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
+Test hiện có 58 ca, chạy khoảng 9 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
 là bằng chứng mạnh nhất rằng movegen + make/undo đúng; đừng xoá.
