@@ -26,12 +26,16 @@ phòng thủ tốt nhất.
 | 4 | Tiến trình: `progress.js`, `storage.js` (mở khoá, Daily, streak, localStorage) | **Logic xong**; còn màn Home, chọn level, chiến thắng |
 | 5 | Kinh tế: `economy.js` (coin, gợi ý 3 mức, quảng cáo/Shop giả lập) | **Logic xong**; còn màn Ad, Shop |
 | 5b | Giao diện: `index.html`, `css/style.css`, `src/ui/` (chủ dự án gọi là "Mốc 5") | **Xong**: màn chơi, chọn level, Daily, Shop, Settings, gợi ý, phong cấp, thắng, Ad |
-| 6 | Trau chuốt: kéo thả quân, nút "Xem lại", chơi thử với người thật, phân tích so sánh | Chưa |
+| 6 | Chơi thử tự động 60 level (Node + trình duyệt), README, `docs/so-sanh.md`, chuẩn bị GitHub Pages | **Xong** |
+| Sau | Kéo thả quân, nút "Xem lại", bộ giải sang Web Worker, chơi thử với người thật | Chưa |
 
 ## Cấu trúc thư mục
 
 ```
 CLAUDE.md          # file này
+README.md          # cho người đọc: cách chơi, cách chạy, cấu trúc, GitHub Pages
+.nojekyll          # GitHub Pages phục vụ file nguyên trạng (không chạy Jekyll)
+docs/so-sanh.md    # so sánh với Pocket Chess: học được gì, cải thiện gì (phần nộp bài)
 package.json       # "type": "module", script test / levels:generate / levels:verify
 levels.json        # 60 level chính + 30 level Daily (SINH bằng tools/, không sửa tay)
 index.html         # trang duy nhất, nạp css/style.css và src/ui/main.js (module)
@@ -66,6 +70,8 @@ tools/
   generate-levels.js  # sinh thế ngẫu nhiên có seed → lọc → rút gọn → chọn → levels.json
   verify-levels.js # kiểm tra toàn bộ levels.json, thoát mã 1 nếu có lỗi
   serve.js         # server tĩnh không phụ thuộc (npm start), chặn đọc file ngoài dự án
+  playtest.js      # máy chơi hết 90 level × N ván qua puzzle.js (nước sai, Undo, gợi ý 3)
+  playtest-browser.cjs  # chơi 60 level + Daily qua giao diện thật (Playwright, .cjs vì require)
 ```
 
 
@@ -187,6 +193,19 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
 - **Màu nền** theo level xoay vòng 8 màu (`themes.js`), Daily luôn xanh biển.
 - **Âm thanh** tạo AudioContext ở lần phát đầu (sau cú chạm); tắt bằng Settings.
 
+## Kiểm thử và phát hành
+
+- `npm test` phải luôn xanh trước khi commit. `npm run playtest` (~30 giây) và
+  `npm run playtest:browser` (~4,5 phút, cần Playwright) chạy khi sửa puzzle.js, solver
+  hoặc giao diện; không nằm trong `npm test` vì chậm.
+- playtest-browser tự bật server cổng 8123, xoá localStorage, chơi 1 → 60 bằng
+  bestHint, rồi kiểm tra save: 60 level, coin = 100 + 60·15 + 25, streak 1, quảng cáo
+  sau level 13, 16, …, 58. Đổi số liệu kinh tế thì sửa con số mong đợi trong script.
+- **GitHub Pages:** trang tĩnh, không build. Settings → Pages → Deploy from a branch →
+  `main` / root. Mọi đường dẫn trong game phải là **tương đối** (`levels.json`,
+  `css/style.css`) vì site nằm dưới `/the-rook-chess/`. Repo private cần gói GitHub trả phí
+  mới bật được Pages. Phiên Claude cloud không có quyền gọi API Pages: chủ repo tự bật.
+
 ## Quy ước code
 
 - ES module (`import`/`export`), đường dẫn import có đuôi `.js`.
@@ -205,6 +224,8 @@ npm start                # server tĩnh, mở http://localhost:8080
 npm test                 # = node --test, chạy mọi file tests/*.test.js
 npm run levels:generate  # sinh lại levels.json (khoảng 100 giây)
 npm run levels:verify    # kiểm tra levels.json (khoảng 8 giây)
+npm run playtest         # chơi thử tự động 90 level × 3 ván (khoảng 30 giây)
+npm run playtest:browser # chơi 60 level qua giao diện thật (khoảng 4,5 phút, cần Playwright)
 ```
 
 Test hiện có 90 ca, chạy khoảng 9 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)

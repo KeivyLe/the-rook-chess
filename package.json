@@ -8,7 +8,9 @@
     "start": "node tools/serve.js",
     "test": "node --test",
     "levels:generate": "node tools/generate-levels.js",
-    "levels:verify": "node tools/verify-levels.js"
+    "levels:verify": "node tools/verify-levels.js",
+    "playtest": "node tools/playtest.js",
+    "playtest:browser": "node tools/playtest-browser.cjs"
   },
   "engines": {
     "node": ">=18"
