@@ -22,9 +22,9 @@ phòng thủ tốt nhất.
 | 1 | Luật cờ: `board.js`, `movegen.js`, test | **Xong** |
 | 2 | Ô lỗ `x`, bộ giải alpha-beta + bảng băm `solver.js` | **Xong** |
 | 2b | Sinh level tự động, `levels.json` (60 chính + 30 Daily), `verify-levels` | **Xong** (chủ dự án gọi là "Mốc 3") |
-| 3 | Màn chơi: vẽ bàn, chọn quân, máy trạng thái, đối thủ đáp trả | Chưa |
-| 4 | Tiến trình: Home, chọn level, mở khoá, Daily, lưu localStorage | Chưa |
-| 5 | Kinh tế: coin, gợi ý 3 mức, quảng cáo/Shop giả lập | Chưa |
+| 3 | Màn chơi: máy trạng thái `puzzle.js` | **Logic xong**; còn giao diện (vẽ bàn, chạm, hộp phong cấp) |
+| 4 | Tiến trình: `progress.js`, `storage.js` (mở khoá, Daily, streak, localStorage) | **Logic xong**; còn màn Home, chọn level, chiến thắng |
+| 5 | Kinh tế: `economy.js` (coin, gợi ý 3 mức, quảng cáo/Shop giả lập) | **Logic xong**; còn màn Ad, Shop |
 | 6 | Trau chuốt: animation, âm thanh, Settings, phân tích so sánh | Chưa |
 
 ## Cấu trúc thư mục
@@ -37,23 +37,34 @@ src/
   board.js         # trạng thái bàn, FEN mở rộng, make/undo (không biết luật đi)
   movegen.js       # sinh nước hợp lệ, inCheck, isCheckmate, isStalemate, perft
   solver.js        # alpha-beta + bảng băm: findMate, isStillWinning, bestDefense, bestHint
+  puzzle.js        # máy trạng thái 1 level: chấm đúng/sai, đối thủ đáp, undo, restart, gợi ý
+  economy.js       # coin, giá gợi ý, quảng cáo thưởng/xen giữa giả lập, Shop giả lập
+  progress.js      # mở khoá level, Daily theo ngày, streak, ngày dạng "yyyymmdd"
+  storage.js       # save data { version, progress, economy, settings } ↔ localStorage
 tests/
   board.test.js    # FEN (kể cả lỗ 'x'), đánh số ô, make/undo
   movegen.test.js  # level mẫu, 6 thế đếm tay, pat, phong cấp, nhập thành, lỗ, perft
   solver.test.js   # 3 thế cờ chép từ ảnh game gốc + chấm nước, đáp trả, gợi ý
   levels.test.js   # chạy verify-levels trên levels.json + test bộ kiểm tra bắt được lỗi
+  puzzle.test.js   # trạng thái, pat, cách giải khác, undo, gợi ý, chơi hết level thật bằng gợi ý
+  economy.test.js  # thưởng, giá gợi ý, 5 quảng cáo/ngày, quảng cáo xen giữa, Shop
+  progress.test.js # mở khoá, dateKey/previousDateKey, Daily xoay vòng, streak
+  storage.test.js  # localStorage giả, JSON hỏng, bị chặn, save cũ thiếu trường
 tools/
   level-check.js   # tiêu chuẩn puzzle dùng chung: analyzePuzzle, positionProblem, difficultyScore
   generate-levels.js  # sinh thế ngẫu nhiên có seed → lọc → rút gọn → chọn → levels.json
   verify-levels.js # kiểm tra toàn bộ levels.json, thoát mã 1 nếu có lỗi
 ```
 
-Các file sẽ thêm ở mốc sau (theo GDD mục 8.1): `src/puzzle.js`,
-`src/economy.js`, `src/progress.js`, `src/storage.js`, `src/ui/*.js`, `index.html`.
+Các file sẽ thêm ở mốc sau (theo GDD mục 8.1): `src/ui/*.js`, `index.html`.
 
 **Nguyên tắc kiến trúc:** phần luật và AI (`board.js`, `movegen.js`, `solver.js`,
 `puzzle.js`, ...) **không được** đụng tới DOM, `window`, `localStorage`, để chạy
 được cả trên trình duyệt lẫn Node test. Chỉ `src/ui/` mới được dùng DOM.
+Ngoại lệ duy nhất: `storage.js` đọc/ghi localStorage, nhưng nhận `storage` qua
+tham số (test truyền đối tượng giả) và bọc mọi thao tác trong try/catch.
+Ngày luôn truyền vào dạng `"yyyymmdd"` (`dateKey(new Date())` ở giao diện), không
+gọi `new Date()` bên trong logic, để test cố định được ngày.
 
 ## Mô hình dữ liệu (đã chốt ở Mốc 1)
 
@@ -120,6 +131,30 @@ Các file sẽ thêm ở mốc sau (theo GDD mục 8.1): `src/puzzle.js`,
   cùng seed ra cùng file), rồi `npm run levels:verify`. Đổi tiêu chuẩn trong
   `level-check.js` thì phải sinh lại và chạy test.
 
+## Logic game (puzzle / economy / progress / storage)
+
+- **Máy trạng thái `puzzle.js`:** `PLAYER_TURN` → `playerMove()` →
+  `WON` | `WRONG_MOVE` (bàn vẫn hiện nước sai; giao diện rung rồi gọi `retry()`)
+  | `OPPONENT_TURN` (giao diện chờ ~400 ms rồi gọi `opponentMove()`).
+  `ANIMATING` là việc của giao diện. Gọi sai trạng thái thì ném lỗi.
+- **Chấm đúng/sai:** bằng `isStillWinning`, không so đáp án; hòa pat là sai
+  (`reason: 'stalemate'`), mất chiếu hết là sai (`'no-mate'`). Sai không trừ nước.
+- **Gợi ý:** `getHint(p, 1|2|3)` → `{from}` / `{from,to,move}` / `{line}`, tính từ thế
+  hiện tại. Trừ coin KHÔNG nằm trong puzzle: giao diện gọi `spendForHint` trước.
+- **Các file độc lập:** economy/progress không import lẫn nhau; giao diện ghép lại.
+  Khi thắng level chính: `s = summary(p)` → `markSolved(progress, id, {hintUsed: s.hintUsed, totalLevels})`
+  → `addSolveReward(economy, {firstTime, perfect: s.perfect})` → `onLevelWon(economy, id)`
+  (true thì hiện Ad) → `writeSave(save)`. Daily: `completeDaily(progress, today)`
+  → `addSolveReward(economy, {firstTime, perfect, daily: true})`.
+- **Số liệu kinh tế** là hằng số đầu `economy.js` (GDD 6.2): khởi đầu 100, giải lần đầu
+  +10, perfect +5, Daily +20, quảng cáo +25 (5 lần/ngày), gợi ý 20/40/100, giải lại 0.
+  Quảng cáo xen giữa: không ở level 1–10, sau đó cứ 3 level thắng thì hiện 1 lần.
+- **Daily:** `dailyIndex(today, daily.length)` = số ngày từ 1970 chia dư số level,
+  nên 30 ngày liên tiếp đi qua đủ 30 level. Streak giữ tới hết ngày hôm sau.
+- **Save data:** `loadSave()` không bao giờ ném lỗi, trả `{save, status}`
+  (`'loaded' | 'new' | 'corrupt' | 'unavailable'`); thiếu trường thì lấy mặc định.
+  Đổi cấu trúc save thì tăng `SAVE_VERSION` và viết bước chuyển đổi.
+
 ## Quy ước code
 
 - ES module (`import`/`export`), đường dẫn import có đuôi `.js`.
@@ -139,5 +174,5 @@ npm run levels:generate  # sinh lại levels.json (khoảng 100 giây)
 npm run levels:verify    # kiểm tra levels.json (khoảng 8 giây)
 ```
 
-Test hiện có 58 ca, chạy khoảng 9 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
+Test hiện có 90 ca, chạy khoảng 9 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
 là bằng chứng mạnh nhất rằng movegen + make/undo đúng; đừng xoá.
