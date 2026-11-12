@@ -1,0 +1,13 @@
+{
+  "name": "the-rook-chess",
+  "version": "0.1.0",
+  "description": "Game giải đố chiếu hết trên bàn cờ nhỏ (bài tập làm lại Pocket Chess), HTML + JavaScript thuần",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
