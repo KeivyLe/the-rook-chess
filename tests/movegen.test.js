@@ -179,3 +179,35 @@ test('perft thế số 3 (ghim ngang, bắt qua đường hiểm): 14, 191, 2812
   assert.equal(perft(b, 3), 2812);
   assert.equal(perft(b, 4), 43238);
 });
+
+// ---------------------------------------------------------------------------
+// Lỗ ('x'): quân không đứng, đi vào hay trượt qua lỗ được
+// ---------------------------------------------------------------------------
+
+test('lỗ: Xe dừng trước lỗ như dừng trước mép bàn', () => {
+  // Không có lỗ: Xe a1 đi được a2, a3, a4, b1, c1, d1 = 6 nước.
+  assert.equal(moveList(parseFen('4/4/4/R3 w')).length, 6);
+  // Lỗ ở a3: Xe chỉ lên được a2, không trượt qua tới a4.
+  assert.deepEqual(moveList(parseFen('4/x3/4/R3 w')), ['a1a2', 'a1b1', 'a1c1', 'a1d1']);
+});
+
+test('lỗ: Tượng và Hậu không trượt qua lỗ theo đường chéo', () => {
+  assert.deepEqual(moveList(parseFen('4/4/1x2/B3 w')), []);
+  assert.deepEqual(moveList(parseFen('3/1x1/Q2 w')), ['a1a2', 'a1a3', 'a1b1', 'a1c1']);
+});
+
+test('lỗ: Mã nhảy QUA lỗ được nhưng không đáp XUỐNG lỗ', () => {
+  // Bàn 3×3, hàng 2 toàn lỗ. Mã a1: b3 được (nhảy qua lỗ), c2 là lỗ nên không được.
+  assert.deepEqual(moveList(parseFen('3/xxx/N2 w')), ['a1b3']);
+});
+
+test('lỗ: Tốt không tiến vào lỗ, Vua không bước vào lỗ', () => {
+  assert.deepEqual(moveList(parseFen('3/x2/P2 w')), []);
+  assert.deepEqual(moveList(parseFen('xx/Kx w')), []);
+});
+
+test('lỗ: nhập thành bị chặn nếu giữa Vua và Xe có lỗ', () => {
+  const b = parseFen('4k3/8/8/8/8/8/8/R3Kx1R w KQ -');
+  assert.equal(findMove(b, 'e1g1'), null);
+  assert.ok(findMove(b, 'e1c1'));
+});

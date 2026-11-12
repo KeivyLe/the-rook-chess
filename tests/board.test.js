@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseFen, toFen, parseSquare, squareName, sqIndex, make, undo } from '../src/board.js';
+import { parseFen, toFen, parseSquare, squareName, sqIndex, onBoard, make, undo } from '../src/board.js';
 import { findMove, legalMoves } from '../src/movegen.js';
 
 test('đọc FEN level mẫu 4×4: kích thước, vị trí quân, lượt đi', () => {
@@ -111,4 +111,32 @@ test('make: phong cấp đặt đúng quân mới, undo trả lại Tốt', () =
 test('undo khi không còn nước thì báo lỗi', () => {
   const b = parseFen('k3/2K1/4/3R w');
   assert.throws(() => undo(b), /undo/);
+});
+
+// ---------------------------------------------------------------------------
+// Lỗ ('x'): ô không tồn tại, cho bàn hình dạng lạ
+// ---------------------------------------------------------------------------
+
+test('lỗ: đọc/ghi FEN có "x", onBoard trả false tại lỗ', () => {
+  // Thế cờ "20 September" (ảnh 3): bàn 4×5 khuyết góc dưới bên trái.
+  const fen = '2k1/4/x1P1/xx1R/xxxB w - -';
+  const b = parseFen(fen);
+  assert.equal(b.width, 4);
+  assert.equal(b.height, 5);
+  assert.equal(toFen(b), fen);
+  assert.equal(onBoard(b, 0, 0), false); // a1 là lỗ
+  assert.equal(onBoard(b, 3, 0), true);  // d1 có Tượng
+  assert.equal(onBoard(b, 0, 3), true);  // a4 là ô thật
+  assert.equal(onBoard(b, 4, 0), false); // ngoài mép phải
+  assert.throws(() => parseSquare(b, 'a1'), /lỗ/);
+  assert.equal(b.squares[parseSquare(b, 'd1')], 'B');
+});
+
+test('lỗ không bị gộp vào số ô trống khi ghi FEN', () => {
+  assert.equal(toFen(parseFen('1x1x/4 w')), '1x1x/4 w - -');
+  assert.equal(toFen(parseFen('xx2/k2K w')), 'xx2/k2K w - -');
+});
+
+test('FEN có 2 Vua cùng màu thì báo lỗi', () => {
+  assert.throws(() => parseFen('K3/4/4/K2k w'), /nhiều hơn 1/);
 });

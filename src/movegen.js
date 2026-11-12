@@ -11,6 +11,9 @@
 // Từ danh sách nước hợp lệ suy ra:
 //   - Chiếu hết (checkmate): đang bị chiếu VÀ không còn nước hợp lệ nào.
 //   - Hòa pat (stalemate): KHÔNG bị chiếu nhưng cũng không còn nước hợp lệ nào.
+//
+// Lỗ ('x'): mọi hàm ở đây kiểm tra ô bằng onBoard() trước khi đi vào, mà
+// onBoard() trả false tại lỗ, nên quân tự dừng trước lỗ như dừng trước mép bàn.
 // =============================================================================
 
 import {

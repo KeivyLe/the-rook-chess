@@ -17,12 +17,16 @@
 //
 // Quân cờ lưu dưới dạng 1 ký tự giống FEN:
 //   Chữ HOA = quân Trắng (K Q R B N P), chữ thường = quân Đen (k q r b n p),
-//   dấu chấm '.' = ô trống.
+//   dấu chấm '.' = ô trống, chữ 'x' = "lỗ" (ô không tồn tại, dùng để tạo bàn
+//   hình dạng lạ). Với luật đi, lỗ giống hệt mép bàn: không quân nào đứng,
+//   đi vào hay trượt qua được. Riêng Mã vẫn nhảy qua được lỗ, giống như Mã
+//   vẫn nhảy qua quân khác (Mã không "đi qua" các ô ở giữa).
 // =============================================================================
 
 export const WHITE = 'w';
 export const BLACK = 'b';
 export const EMPTY = '.';
+export const HOLE = 'x';
 
 // Tên cột: a..z. Giới hạn bàn rộng tối đa 26 cột để tên ô luôn là 1 chữ cái.
 const FILE_NAMES = 'abcdefghijklmnopqrstuvwxyz';
@@ -30,11 +34,11 @@ const PIECE_LETTERS = 'KQRBNPkqrbnp';
 
 /**
  * Cho biết một quân thuộc bên nào.
- * Trả về 'w' nếu là chữ hoa, 'b' nếu là chữ thường, null nếu là ô trống.
- * Ví dụ: colorOf('R') = 'w', colorOf('k') = 'b', colorOf('.') = null.
+ * Trả về 'w' nếu là chữ hoa, 'b' nếu là chữ thường, null nếu là ô trống hoặc lỗ.
+ * Ví dụ: colorOf('R') = 'w', colorOf('k') = 'b', colorOf('.') = null, colorOf('x') = null.
  */
 export function colorOf(piece) {
-  if (piece === EMPTY) return null;
+  if (piece === EMPTY || piece === HOLE) return null;
   return piece === piece.toUpperCase() ? WHITE : BLACK;
 }
 
@@ -105,9 +109,21 @@ export function rankOf(board, sq) {
   return Math.floor(sq / board.width);
 }
 
-/** Kiểm tra (cột, hàng) có nằm trong bàn không. Dùng khi sinh nước để không đi ra ngoài mép. */
-export function onBoard(board, file, rank) {
+/**
+ * Kiểm tra (cột, hàng) có nằm trong hình chữ nhật width × height không.
+ * Chỉ xét toạ độ, KHÔNG xét lỗ. Hầu hết code nên dùng onBoard() thay vì hàm này.
+ */
+export function inBounds(board, file, rank) {
   return file >= 0 && file < board.width && rank >= 0 && rank < board.height;
+}
+
+/**
+ * Kiểm tra (cột, hàng) có phải là một ô THẬT của bàn không: nằm trong hình
+ * chữ nhật và không phải lỗ. movegen.js gọi hàm này trước mỗi bước đi, nên
+ * chỉ cần sửa ở đây là quân tự dừng trước lỗ giống như dừng trước mép bàn.
+ */
+export function onBoard(board, file, rank) {
+  return inBounds(board, file, rank) && board.squares[rank * board.width + file] !== HOLE;
 }
 
 /**
@@ -127,8 +143,10 @@ export function parseSquare(board, name) {
   if (!m) throw new Error(`Tên ô không hợp lệ: "${name}"`);
   const file = FILE_NAMES.indexOf(m[1]);
   const rank = Number(m[2]) - 1;
-  if (!onBoard(board, file, rank)) throw new Error(`Ô ${name} nằm ngoài bàn ${board.width}×${board.height}`);
-  return sqIndex(board, file, rank);
+  if (!inBounds(board, file, rank)) throw new Error(`Ô ${name} nằm ngoài bàn ${board.width}×${board.height}`);
+  const sq = sqIndex(board, file, rank);
+  if (board.squares[sq] === HOLE) throw new Error(`Ô ${name} là lỗ, không tồn tại trên bàn`);
+  return sq;
 }
 
 /**
@@ -137,14 +155,17 @@ export function parseSquare(board, name) {
  * Định dạng: "<các hàng> [lượt] [nhập thành] [bắt tốt qua đường]"
  *   - <các hàng>: các hàng ngăn bởi '/', viết từ hàng TRÊN CÙNG xuống hàng dưới cùng.
  *     Trong mỗi hàng: chữ cái là quân, số là số ô trống liên tiếp (có thể nhiều
- *     chữ số, ví dụ "10" trên bàn rộng). Số hàng chính là height, số ô trong
- *     một hàng chính là width, mọi hàng phải dài bằng nhau.
+ *     chữ số, ví dụ "10" trên bàn rộng), 'x' là một lỗ (ô không tồn tại).
+ *     Số hàng chính là height, số ô trong một hàng (tính cả lỗ) chính là
+ *     width, mọi hàng phải dài bằng nhau.
  *   - [lượt]: 'w' (Trắng đi) hoặc 'b' (Đen đi). Mặc định 'w'.
  *   - [nhập thành]: tổ hợp các chữ K Q k q, hoặc '-' nếu không có. Mặc định '-'.
  *   - [bắt tốt qua đường]: tên ô đích (ví dụ 'd6') hoặc '-'. Mặc định '-'.
  * Các trường đếm nước (halfmove, fullmove) của FEN chuẩn nếu có thì bỏ qua.
  *
  * Ví dụ: "k3/2K1/4/3R w" là bàn 4×4: Vua đen a4, Vua trắng c3, Xe trắng d1, Trắng đi.
+ *        "2k1/4/x1P1/xx1R/xxxB w" là bàn 4×5 bị khuyết góc dưới bên trái
+ *        (a3, a2, b2, a1, b1, c1 là lỗ).
  *
  * options (tùy chọn, thường lấy từ dữ liệu level):
  *   - width, height: nếu có thì kiểm tra FEN có đúng kích thước này không.
@@ -170,7 +191,7 @@ export function parseFen(fen, options = {}) {
         const n = Number(num);
         if (n === 0) throw new Error(`FEN sai: số ô trống bằng 0 ở hàng ${i + 1} (tính từ trên)`);
         for (let k = 0; k < n; k++) cells.push(EMPTY);
-      } else if (PIECE_LETTERS.includes(ch)) {
+      } else if (PIECE_LETTERS.includes(ch) || ch === HOLE) {
         cells.push(ch);
         j++;
       } else {
@@ -219,12 +240,18 @@ export function parseFen(fen, options = {}) {
   const ep = parts[3] ?? '-';
   board.ep = ep === '-' ? -1 : parseSquare(board, ep);
 
+  // Bước 4: kiểm tra mỗi bên có nhiều nhất 1 Vua (puzzle có thể không có Vua).
+  for (const king of ['K', 'k']) {
+    if (board.squares.filter((p) => p === king).length > 1) throw new Error(`FEN sai: có nhiều hơn 1 quân ${king}`);
+  }
+
   board.pawnDoubleStep = options.pawnDoubleStep ?? height >= 8;
   return board;
 }
 
 /**
  * Ghi bàn cờ ngược lại thành chuỗi FEN mở rộng (dạng đầy đủ 4 trường).
+ * Lỗ được ghi là 'x' (không gộp vào số ô trống, vì lỗ không phải ô trống).
  * Dùng để in ra khi debug, hoặc so sánh trong test: sau make() rồi undo()
  * thì toFen phải giống hệt lúc đầu.
  */
