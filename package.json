@@ -5,6 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "start": "node tools/serve.js",
     "test": "node --test",
     "levels:generate": "node tools/generate-levels.js",
     "levels:verify": "node tools/verify-levels.js"

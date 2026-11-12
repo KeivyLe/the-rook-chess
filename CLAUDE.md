@@ -25,7 +25,8 @@ phòng thủ tốt nhất.
 | 3 | Màn chơi: máy trạng thái `puzzle.js` | **Logic xong**; còn giao diện (vẽ bàn, chạm, hộp phong cấp) |
 | 4 | Tiến trình: `progress.js`, `storage.js` (mở khoá, Daily, streak, localStorage) | **Logic xong**; còn màn Home, chọn level, chiến thắng |
 | 5 | Kinh tế: `economy.js` (coin, gợi ý 3 mức, quảng cáo/Shop giả lập) | **Logic xong**; còn màn Ad, Shop |
-| 6 | Trau chuốt: animation, âm thanh, Settings, phân tích so sánh | Chưa |
+| 5b | Giao diện: `index.html`, `css/style.css`, `src/ui/` (chủ dự án gọi là "Mốc 5") | **Xong**: màn chơi, chọn level, Daily, Shop, Settings, gợi ý, phong cấp, thắng, Ad |
+| 6 | Trau chuốt: kéo thả quân, nút "Xem lại", chơi thử với người thật, phân tích so sánh | Chưa |
 
 ## Cấu trúc thư mục
 
@@ -33,6 +34,8 @@ phòng thủ tốt nhất.
 CLAUDE.md          # file này
 package.json       # "type": "module", script test / levels:generate / levels:verify
 levels.json        # 60 level chính + 30 level Daily (SINH bằng tools/, không sửa tay)
+index.html         # trang duy nhất, nạp css/style.css và src/ui/main.js (module)
+css/style.css      # toàn bộ giao diện; biến màu ở :root, màu nền do themes.js đặt
 src/
   board.js         # trạng thái bàn, FEN mở rộng, make/undo (không biết luật đi)
   movegen.js       # sinh nước hợp lệ, inCheck, isCheckmate, isStalemate, perft
@@ -41,6 +44,14 @@ src/
   economy.js       # coin, giá gợi ý, quảng cáo thưởng/xen giữa giả lập, Shop giả lập
   progress.js      # mở khoá level, Daily theo ngày, streak, ngày dạng "yyyymmdd"
   storage.js       # save data { version, progress, economy, settings } ↔ localStorage
+  ui/              # CHỈ thư mục này được dùng DOM
+    main.js        # fetch levels.json → startApp
+    app.js         # các màn hình + nối logic với hình ảnh (luồng chơi, gợi ý, thắng, Ad, Shop, Settings)
+    board-view.js  # vẽ bàn/quân bằng div tuyệt đối, cạnh dày 3D, xoay bàn, animation trượt/rung/đổ Vua
+    pieces.js      # quân cờ SVG tự vẽ (khung 100×120)
+    sound.js       # âm thanh tổng hợp Web Audio (không file ngoài)
+    themes.js      # bảng màu nền theo level, màu Daily
+    dom.js         # h() tạo phần tử, wait(), nextFrame()
 tests/
   board.test.js    # FEN (kể cả lỗ 'x'), đánh số ô, make/undo
   movegen.test.js  # level mẫu, 6 thế đếm tay, pat, phong cấp, nhập thành, lỗ, perft
@@ -54,9 +65,9 @@ tools/
   level-check.js   # tiêu chuẩn puzzle dùng chung: analyzePuzzle, positionProblem, difficultyScore
   generate-levels.js  # sinh thế ngẫu nhiên có seed → lọc → rút gọn → chọn → levels.json
   verify-levels.js # kiểm tra toàn bộ levels.json, thoát mã 1 nếu có lỗi
+  serve.js         # server tĩnh không phụ thuộc (npm start), chặn đọc file ngoài dự án
 ```
 
-Các file sẽ thêm ở mốc sau (theo GDD mục 8.1): `src/ui/*.js`, `index.html`.
 
 **Nguyên tắc kiến trúc:** phần luật và AI (`board.js`, `movegen.js`, `solver.js`,
 `puzzle.js`, ...) **không được** đụng tới DOM, `window`, `localStorage`, để chạy
@@ -155,6 +166,27 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   (`'loaded' | 'new' | 'corrupt' | 'unavailable'`); thiếu trường thì lấy mặc định.
   Đổi cấu trúc save thì tăng `SAVE_VERSION` và viết bước chuyển đổi.
 
+## Giao diện (src/ui/)
+
+- **Chạy:** `npm start` rồi mở http://localhost:8080 (mở file:// thì fetch bị chặn).
+  `window.rookChess` là đối tượng app để kiểm thử trên trình duyệt
+  (`.puzzle`, `.save`, `.actions.startLevel(id)`...).
+- **Bố cục màn chơi:** icon lưới 9 chấm (trái, mở chọn level; Daily thì là nút back),
+  "Level N" nhỏ (Daily: "12 tháng 11"), "Mate in N" to (N = số nước còn lại,
+  đổi màu khi còn 1 ở level nhiều nước; thắng rồi thì giữ đề bài), coin (phải),
+  bàn cờ, 2 nút tròn: gợi ý và Undo (mờ khi không dùng được).
+- **Hình ảnh tự làm**, chỉ theo bố cục của game gốc: quân SVG, bảng màu, icon đều
+  tự vẽ. Không dùng font/ảnh/âm thanh bên ngoài.
+- **Bàn cờ:** ô là div đặt bằng `transform: translate`; lỗ không vẽ; dải cạnh dày
+  vẽ dưới mỗi ô mà bên dưới (trên màn hình) là mép hoặc lỗ. Người chơi cầm Đen
+  thì xoay 180° (phía người chơi luôn ở dưới). Quân hàng dưới có z-index cao hơn.
+- **Luồng một nước:** `busy = true` (chính là trạng thái ANIMATING) → trượt quân →
+  `playerMove` → sai: rung + toast + `retry` + trượt về; đúng: chờ 400 ms →
+  `opponentMove` → trượt quân đối thủ; thắng: Vua đổ + pháo giấy + hộp thắng.
+  Màn hình luôn vẽ lại từ dữ liệu sau animation (`drawBoard`), không giữ trạng thái riêng.
+- **Màu nền** theo level xoay vòng 8 màu (`themes.js`), Daily luôn xanh biển.
+- **Âm thanh** tạo AudioContext ở lần phát đầu (sau cú chạm); tắt bằng Settings.
+
 ## Quy ước code
 
 - ES module (`import`/`export`), đường dẫn import có đuôi `.js`.
@@ -169,6 +201,7 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
 ## Lệnh
 
 ```bash
+npm start                # server tĩnh, mở http://localhost:8080
 npm test                 # = node --test, chạy mọi file tests/*.test.js
 npm run levels:generate  # sinh lại levels.json (khoảng 100 giây)
 npm run levels:verify    # kiểm tra levels.json (khoảng 8 giây)
