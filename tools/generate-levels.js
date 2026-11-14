@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import { createBoard, toFen, typeOf, colorOf, EMPTY, HOLE } from '../src/board.js';
-import { analyzePuzzle } from './level-check.js';
+import { analyzePuzzle, hasInnerObstacle, obstaclesMatter } from './level-check.js';
 import { canonicalFen } from './verify-levels.js';
 
 // ---------------------------------------------------------------------------
@@ -56,6 +56,19 @@ const CHAPTERS = [
   { chapter: 3, name: 'Tính toán', mateIn: 3, count: 15 },
   { chapter: 4, name: 'Cao thủ', mateIn: 4, count: 10 },
 ];
+/**
+ * Mode Obstacle (Kế hoạch MKT): thế cờ có vật cản BÊN TRONG bàn (không ở mép).
+ * Vật cản dùng chung ký tự 'x' với lỗ nên luật đi giống hệt; giao diện vẽ thành khối đá.
+ * `obstacles`: [ít nhất, nhiều nhất] số vật cản. Số bài theo N (tổng 20).
+ */
+const OBSTACLE_SPEC = {
+  widths: [4, 5, 6], heights: [4, 5, 6], attacker: [1, 3], defender: [0, 3],
+  attackerPool: 'qrrbbnnpp', defenderPool: 'pppnbr', obstacles: [2, 4], noBorderHoles: true,
+};
+const OBSTACLE_COUNTS = { 1: 6, 2: 8, 3: 6 };
+/** Mode Blitz Mate: bài ngắn để giải nhanh (tổng 40), thứ tự trộn lúc chơi. */
+const BLITZ_COUNTS = { 1: 28, 2: 12 };
+
 /** Số level Daily theo từng N (tổng 30). */
 const DAILY = { 1: 8, 2: 14, 3: 8 };
 /** Số ứng viên cần gom cho mỗi N trước khi chọn (nhiều hơn số cần để có lựa chọn). */
@@ -124,6 +137,17 @@ function punchHoles(rng, board) {
 }
 
 /**
+ * Đặt `count` vật cản ở các ô BÊN TRONG bàn (không phải hàng/cột ngoài cùng),
+ * để chúng chắn đường đi giữa bàn chứ không chỉ làm bàn khuyết góc.
+ */
+function placeObstacles(rng, board, count) {
+  const { width: w, height: h } = board;
+  const inner = [];
+  for (let r = 1; r < h - 1; r++) for (let f = 1; f < w - 1; f++) inner.push(r * w + f);
+  for (const sq of shuffle(rng, inner).slice(0, count)) board.squares[sq] = HOLE;
+}
+
+/**
  * Tạo một thế cờ ngẫu nhiên theo cấu hình `spec`. Bên tấn công đi trước.
  * `onlyPiece` (không bắt buộc): bên tấn công chỉ có đúng 1 quân loại này,
  * và luôn là Trắng (level giới thiệu quân cho người mới, không bắt cầm Đen ngay).
@@ -131,7 +155,8 @@ function punchHoles(rng, board) {
  */
 function randomPosition(rng, spec, onlyPiece) {
   const board = createBoard(pick(rng, spec.widths), pick(rng, spec.heights));
-  if (rng() < HOLE_CHANCE) punchHoles(rng, board);
+  if (!spec.noBorderHoles && rng() < HOLE_CHANCE) punchHoles(rng, board);
+  if (spec.obstacles) placeObstacles(rng, board, randInt(rng, ...spec.obstacles));
 
   const attacker = !onlyPiece && rng() < BLACK_CHANCE ? 'b' : 'w';
   const own = (p) => (attacker === 'w' ? p.toUpperCase() : p.toLowerCase());
@@ -206,13 +231,13 @@ function attackerHasOnly(board, type) {
  * kể cả trùng kiểu đối xứng gương trái–phải.
  * `accept` (không bắt buộc) là điều kiện thêm cho ứng viên.
  */
-function collect(rng, n, count, seen, { onlyPiece, accept } = {}) {
+function collect(rng, n, count, seen, { onlyPiece, accept, spec = SPECS[n], label = '' } = {}) {
   const result = [];
   let tries = 0;
   const started = Date.now();
   while (result.length < count) {
     tries++;
-    const board = randomPosition(rng, SPECS[n], onlyPiece);
+    const board = randomPosition(rng, spec, onlyPiece);
     const first = analyzePuzzle(board, n);
     if (!first.ok) continue;
     const { analysis } = minimize(board, n, first);
@@ -224,7 +249,7 @@ function collect(rng, n, count, seen, { onlyPiece, accept } = {}) {
     result.push({ fen: shortFen(board), board, analysis, mateIn: n });
   }
   const secs = ((Date.now() - started) / 1000).toFixed(1);
-  process.stderr.write(`  mate in ${n}${onlyPiece ? ` (giới thiệu ${onlyPiece.toUpperCase()})` : ''}: ${count} thế / ${tries} lần thử, ${secs}s\n`);
+  process.stderr.write(`  ${label}mate in ${n}${onlyPiece ? ` (giới thiệu ${onlyPiece.toUpperCase()})` : ''}: ${count} thế / ${tries} lần thử, ${secs}s\n`);
   return result;
 }
 
@@ -313,12 +338,32 @@ export function generateLevels(seed) {
   for (const [n, count] of Object.entries(DAILY)) dailyPicks.push(...shuffle(rng, pools[n]).slice(0, count));
   const daily = shuffle(rng, dailyPicks).map((c, i) => toLevel(c, { id: `daily-${String(i + 1).padStart(2, '0')}` }));
 
+  // Hai mode bán thêm. Sinh SAU level chính và Daily nên không làm đổi các level đó
+  // (cùng seed thì phần đầu dãy số ngẫu nhiên vẫn y như cũ).
+  const two = (i) => String(i + 1).padStart(2, '0');
+  const obstaclePool = [];
+  for (const [n, count] of Object.entries(OBSTACLE_COUNTS)) {
+    const got = collect(rng, Number(n), count, seen, {
+      spec: OBSTACLE_SPEC,
+      label: 'Obstacle ',
+      accept: (b, a) => hasInnerObstacle(b) && obstaclesMatter(b, Number(n), a.solution),
+    });
+    obstaclePool.push(...got.sort(byDifficulty));
+  }
+  const obstacle = obstaclePool.map((c, i) => toLevel(c, { id: `obstacle-${two(i)}`, obstacles: true }));
+  const blitzPool = [];
+  for (const [n, count] of Object.entries(BLITZ_COUNTS)) {
+    blitzPool.push(...collect(rng, Number(n), count, seen, { label: 'Blitz ' }));
+  }
+  const blitz = blitzPool.map((c, i) => toLevel(c, { id: `blitz-${two(i)}` }));
+
   return {
-    version: 1,
+    version: 2,
     seed,
     chapters: CHAPTERS.map(({ chapter, name, mateIn }) => ({ chapter, name, mateIn })),
     levels,
     daily,
+    modes: { obstacle, blitz },
   };
 }
 

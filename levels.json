@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "seed": 20261112,
   "chapters": [
     {
@@ -986,5 +986,631 @@
       "solution": ["d4d1"],
       "difficulty": 57.7
     }
-  ]
+  ],
+  "modes": {
+    "obstacle": [
+      {
+        "id": "obstacle-01",
+        "obstacles": true,
+        "width": 4,
+        "height": 4,
+        "fen": "BQ2/1xx1/1xx1/k1K1 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["b4a3"],
+        "difficulty": 42.1
+      },
+      {
+        "id": "obstacle-02",
+        "obstacles": true,
+        "width": 4,
+        "height": 4,
+        "fen": "2R1/1xx1/3k/1K2 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["c4d4"],
+        "difficulty": 43
+      },
+      {
+        "id": "obstacle-03",
+        "obstacles": true,
+        "width": 4,
+        "height": 5,
+        "fen": "2R1/1xx1/2x1/2xk/1K2 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["c5d5"],
+        "difficulty": 44
+      },
+      {
+        "id": "obstacle-04",
+        "obstacles": true,
+        "width": 5,
+        "height": 4,
+        "fen": "2k2/Qx1x1/2K2/5 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["a3a4"],
+        "difficulty": 52
+      },
+      {
+        "id": "obstacle-05",
+        "obstacles": true,
+        "width": 4,
+        "height": 6,
+        "fen": "4/4/4/kxQ1/1x2/1K2 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["c3a5"],
+        "difficulty": 56.1
+      },
+      {
+        "id": "obstacle-06",
+        "obstacles": true,
+        "width": 5,
+        "height": 6,
+        "fen": "5/2r2/K1kx1/2x2/2B2/2N2 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["c2b3"],
+        "difficulty": 59.8
+      },
+      {
+        "id": "obstacle-07",
+        "obstacles": true,
+        "width": 5,
+        "height": 4,
+        "fen": "K2N1/1x1x1/kx3/1N3 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["b1c3", "a2a1", "d4c2"],
+        "difficulty": 76
+      },
+      {
+        "id": "obstacle-08",
+        "obstacles": true,
+        "width": 6,
+        "height": 4,
+        "fen": "q5/1xx3/P1xx2/3K1k b",
+        "mateIn": 2,
+        "attacker": "b",
+        "solution": ["a4a2", "d1c1", "a2a1"],
+        "difficulty": 84.4
+      },
+      {
+        "id": "obstacle-09",
+        "obstacles": true,
+        "width": 4,
+        "height": 4,
+        "fen": "1RKn/1xxP/1xx1/qk2 b",
+        "mateIn": 2,
+        "attacker": "b",
+        "solution": ["a1a3", "b4a4", "a3a4"],
+        "difficulty": 87.3
+      },
+      {
+        "id": "obstacle-10",
+        "obstacles": true,
+        "width": 5,
+        "height": 4,
+        "fen": "4q/p1x2/2xx1/1K1k1 b",
+        "mateIn": 2,
+        "attacker": "b",
+        "solution": ["e4b4", "b1a2", "b4b2"],
+        "difficulty": 87.7
+      },
+      {
+        "id": "obstacle-11",
+        "obstacles": true,
+        "width": 5,
+        "height": 4,
+        "fen": "1k3/1xxx1/1x2K/2Q2 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["c1a1", "b4c4", "a1a4"],
+        "difficulty": 100.1
+      },
+      {
+        "id": "obstacle-12",
+        "obstacles": true,
+        "width": 6,
+        "height": 4,
+        "fen": "1Nk3/3xx1/1R2xK/6 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["b4a2", "c4d4", "b2b4"],
+        "difficulty": 103.8
+      },
+      {
+        "id": "obstacle-13",
+        "obstacles": true,
+        "width": 5,
+        "height": 6,
+        "fen": "5/2P1K/1x3/kx1x1/1N2R/5 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["b2c4", "a3a4", "c5c6q"],
+        "difficulty": 108.2
+      },
+      {
+        "id": "obstacle-14",
+        "obstacles": true,
+        "width": 6,
+        "height": 6,
+        "fen": "6/2K3/k2P2/3Qx1/1x2x1/6 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["d4d5", "a4a5", "d3a3"],
+        "difficulty": 124.8
+      },
+      {
+        "id": "obstacle-15",
+        "obstacles": true,
+        "width": 6,
+        "height": 4,
+        "fen": "1k4/1xx1x1/2xPKp/2B3 w",
+        "mateIn": 3,
+        "attacker": "w",
+        "solution": ["d2d3", "f2f1q", "e2f1", "b4a4", "d3d4q"],
+        "difficulty": 115.7
+      },
+      {
+        "id": "obstacle-16",
+        "obstacles": true,
+        "width": 6,
+        "height": 4,
+        "fen": "Q4K/1x2x1/2x1x1/5k w",
+        "mateIn": 3,
+        "attacker": "w",
+        "solution": ["f4f3", "f1e1", "a4d4", "e1f1", "d4d1"],
+        "difficulty": 120.5
+      },
+      {
+        "id": "obstacle-17",
+        "obstacles": true,
+        "width": 4,
+        "height": 5,
+        "fen": "3k/Kxx1/1xx1/3B/Q3 w",
+        "mateIn": 3,
+        "attacker": "w",
+        "solution": ["a4b5", "d5d4", "a1b1", "d4d5", "b1d3"],
+        "difficulty": 123.9
+      },
+      {
+        "id": "obstacle-18",
+        "obstacles": true,
+        "width": 6,
+        "height": 4,
+        "fen": "1K3k/1xx3/4R1/6 w",
+        "mateIn": 3,
+        "attacker": "w",
+        "solution": ["b4c4", "f4f3", "c4d3", "f3f4", "e2f2"],
+        "difficulty": 127.3
+      },
+      {
+        "id": "obstacle-19",
+        "obstacles": true,
+        "width": 6,
+        "height": 4,
+        "fen": "6/Px1x2/1Kxp1q/5k b",
+        "mateIn": 3,
+        "attacker": "b",
+        "solution": ["f2d4", "b2a2", "d2d1q", "a3a4q", "d1a1"],
+        "difficulty": 131.5
+      },
+      {
+        "id": "obstacle-20",
+        "obstacles": true,
+        "width": 6,
+        "height": 5,
+        "fen": "6/2xPx1/2x3/3K2/Bk4 w",
+        "mateIn": 3,
+        "attacker": "w",
+        "solution": ["d4d5q", "b1a2", "d2c2", "a2a3", "d5a5"],
+        "difficulty": 137.4
+      }
+    ],
+    "blitz": [
+      {
+        "id": "blitz-01",
+        "width": 5,
+        "height": 4,
+        "fen": "5/K2Q1/5/k4 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["d3d1"],
+        "difficulty": 56
+      },
+      {
+        "id": "blitz-02",
+        "width": 5,
+        "height": 5,
+        "fen": "3k1/1R3/5/4Q/2K2 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["e2b5"],
+        "difficulty": 68
+      },
+      {
+        "id": "blitz-03",
+        "width": 3,
+        "height": 4,
+        "fen": "3/1qk/3/K2 b",
+        "mateIn": 1,
+        "attacker": "b",
+        "solution": ["b3b2"],
+        "difficulty": 49
+      },
+      {
+        "id": "blitz-04",
+        "width": 3,
+        "height": 4,
+        "fen": "Q2/3/3/K1k w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["a4c4"],
+        "difficulty": 43.7
+      },
+      {
+        "id": "blitz-05",
+        "width": 4,
+        "height": 4,
+        "fen": "4/2R1/2K1/k3 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["c3a3"],
+        "difficulty": 48.6
+      },
+      {
+        "id": "blitz-06",
+        "width": 4,
+        "height": 5,
+        "fen": "1x2/N3/4/1K1x/3k w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["a4c3"],
+        "difficulty": 48.2
+      },
+      {
+        "id": "blitz-07",
+        "width": 5,
+        "height": 5,
+        "fen": "2k2/1n3/5/2r2/KR3 b",
+        "mateIn": 1,
+        "attacker": "b",
+        "solution": ["c2a2"],
+        "difficulty": 62.5
+      },
+      {
+        "id": "blitz-08",
+        "width": 4,
+        "height": 5,
+        "fen": "4/Q3/1P1k/4/2K1 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["a4c4"],
+        "difficulty": 56.1
+      },
+      {
+        "id": "blitz-09",
+        "width": 3,
+        "height": 4,
+        "fen": "2Q/3/2K/k1x w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["c4a4"],
+        "difficulty": 43.2
+      },
+      {
+        "id": "blitz-10",
+        "width": 4,
+        "height": 4,
+        "fen": "1K2/4/x2B/1Qbk w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["b1c1"],
+        "difficulty": 55.6
+      },
+      {
+        "id": "blitz-11",
+        "width": 3,
+        "height": 4,
+        "fen": "K2/1Pk/2p/3 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["b3b4q"],
+        "difficulty": 42.1
+      },
+      {
+        "id": "blitz-12",
+        "width": 4,
+        "height": 5,
+        "fen": "4/k1K1/4/1R2/4 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["b2a2"],
+        "difficulty": 54.1
+      },
+      {
+        "id": "blitz-13",
+        "width": 5,
+        "height": 4,
+        "fen": "4k/2K2/R4/5 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["a2e2"],
+        "difficulty": 55.1
+      },
+      {
+        "id": "blitz-14",
+        "width": 3,
+        "height": 5,
+        "fen": "3/1R1/3/K2/2k w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["b4c4"],
+        "difficulty": 48.1
+      },
+      {
+        "id": "blitz-15",
+        "width": 4,
+        "height": 4,
+        "fen": "2k1/4/R1K1/4 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["a2a4"],
+        "difficulty": 48.6
+      },
+      {
+        "id": "blitz-16",
+        "width": 4,
+        "height": 5,
+        "fen": "4/K1k1/4/2r1/4 b",
+        "mateIn": 1,
+        "attacker": "b",
+        "solution": ["c2a2"],
+        "difficulty": 51.8
+      },
+      {
+        "id": "blitz-17",
+        "width": 3,
+        "height": 4,
+        "fen": "3/1n1/k1K/r2 b",
+        "mateIn": 1,
+        "attacker": "b",
+        "solution": ["a1c1"],
+        "difficulty": 39.8
+      },
+      {
+        "id": "blitz-18",
+        "width": 4,
+        "height": 4,
+        "fen": "k3/1R2/2K1/1N2 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["b1c3"],
+        "difficulty": 56
+      },
+      {
+        "id": "blitz-19",
+        "width": 4,
+        "height": 4,
+        "fen": "K1k1/4/2r1/4 b",
+        "mateIn": 1,
+        "attacker": "b",
+        "solution": ["c2a2"],
+        "difficulty": 47.2
+      },
+      {
+        "id": "blitz-20",
+        "width": 4,
+        "height": 4,
+        "fen": "N2K/4/k3/2Q1 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["c1b2"],
+        "difficulty": 56
+      },
+      {
+        "id": "blitz-21",
+        "width": 5,
+        "height": 4,
+        "fen": "4x/3N1/N2p1/1Kxk1 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["a2c3"],
+        "difficulty": 50.7
+      },
+      {
+        "id": "blitz-22",
+        "width": 3,
+        "height": 5,
+        "fen": "RK1/3/2k/3/1Q1 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["a5a3"],
+        "difficulty": 54.6
+      },
+      {
+        "id": "blitz-23",
+        "width": 4,
+        "height": 4,
+        "fen": "1K2/2N1/3R/k3 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["d2a2"],
+        "difficulty": 56
+      },
+      {
+        "id": "blitz-24",
+        "width": 3,
+        "height": 4,
+        "fen": "k2/3/K2/1Q1 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["b1b3"],
+        "difficulty": 45.2
+      },
+      {
+        "id": "blitz-25",
+        "width": 4,
+        "height": 4,
+        "fen": "4/K3/3R/k3 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["d2d1"],
+        "difficulty": 48.6
+      },
+      {
+        "id": "blitz-26",
+        "width": 5,
+        "height": 4,
+        "fen": "2kx1/K4/4P/3R1 w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["d1c1"],
+        "difficulty": 53.3
+      },
+      {
+        "id": "blitz-27",
+        "width": 4,
+        "height": 4,
+        "fen": "2Q1/3K/4/3k w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["c4c2"],
+        "difficulty": 49.8
+      },
+      {
+        "id": "blitz-28",
+        "width": 4,
+        "height": 5,
+        "fen": "1kx1/4/R1RK/4/3x w",
+        "mateIn": 1,
+        "attacker": "w",
+        "solution": ["c3b3"],
+        "difficulty": 55.1
+      },
+      {
+        "id": "blitz-29",
+        "width": 5,
+        "height": 5,
+        "fen": "1k1Kx/5/1p2Q/1r1R1/4x w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["e3c5", "b5a4", "d2d4"],
+        "difficulty": 100
+      },
+      {
+        "id": "blitz-30",
+        "width": 5,
+        "height": 5,
+        "fen": "4x/3pk/2RnP/K3x/1Q3 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["b1d3", "e4d5", "d3d4"],
+        "difficulty": 108.5
+      },
+      {
+        "id": "blitz-31",
+        "width": 5,
+        "height": 4,
+        "fen": "1R3/2k2/2p2/K1Q1x w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["b4e4", "c3d3", "c1e3"],
+        "difficulty": 111.8
+      },
+      {
+        "id": "blitz-32",
+        "width": 4,
+        "height": 4,
+        "fen": "3K/PP2/4/1kr1 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["b3b4q", "b1c2", "a3a4q"],
+        "difficulty": 79.7
+      },
+      {
+        "id": "blitz-33",
+        "width": 5,
+        "height": 5,
+        "fen": "5/1k2P/3K1/2pp1/5 b",
+        "mateIn": 2,
+        "attacker": "b",
+        "solution": ["d2d1q", "d3e3", "c2c1q"],
+        "difficulty": 98.9
+      },
+      {
+        "id": "blitz-34",
+        "width": 4,
+        "height": 4,
+        "fen": "N1k1/4/K2P/2N1 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["a4b2", "c4d4", "c1b3"],
+        "difficulty": 87.1
+      },
+      {
+        "id": "blitz-35",
+        "width": 4,
+        "height": 6,
+        "fen": "k3/4/3Q/2R1/1p1K/4 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["d4a4", "a6b6", "c3c6"],
+        "difficulty": 100.9
+      },
+      {
+        "id": "blitz-36",
+        "width": 4,
+        "height": 6,
+        "fen": "4/P1pk/4/2PK/4/4 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["c3c4", "d5d6", "a5a6q"],
+        "difficulty": 80.8
+      },
+      {
+        "id": "blitz-37",
+        "width": 4,
+        "height": 4,
+        "fen": "1Kx1/2P1/4/1kbq b",
+        "mateIn": 2,
+        "attacker": "b",
+        "solution": ["b1c2", "b4a4", "c2c3"],
+        "difficulty": 100
+      },
+      {
+        "id": "blitz-38",
+        "width": 5,
+        "height": 6,
+        "fen": "4R/1KPk1/5/5/5/x4 w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["c5c6q", "d5d4", "c6c4"],
+        "difficulty": 104.8
+      },
+      {
+        "id": "blitz-39",
+        "width": 5,
+        "height": 4,
+        "fen": "1k2K/3r1/3rP/5 b",
+        "mateIn": 2,
+        "attacker": "b",
+        "solution": ["d3c3", "e2e3", "c3c4"],
+        "difficulty": 113.2
+      },
+      {
+        "id": "blitz-40",
+        "width": 5,
+        "height": 5,
+        "fen": "5/5/k3p/2KR1/4R w",
+        "mateIn": 2,
+        "attacker": "w",
+        "solution": ["d2d4", "a3a2", "d4a4"],
+        "difficulty": 118.5
+      }
+    ]
+  }
 }

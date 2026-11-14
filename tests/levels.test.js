@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { analyzePuzzle, positionProblem } from '../tools/level-check.js';
+import { analyzePuzzle, positionProblem, hasInnerObstacle, obstaclesMatter } from '../tools/level-check.js';
 import { verifyLevels, verifyLevel, canonicalFen, ORIGINAL_POSITIONS, MAIN_COUNTS, DAILY_COUNT } from '../tools/verify-levels.js';
 import { createRng } from '../tools/generate-levels.js';
 import { parseFen } from '../src/board.js';
@@ -122,4 +122,39 @@ test('createRng: cùng seed cho cùng dãy số, khác seed cho dãy khác', () 
   assert.deepEqual(seqA, seqB);
   assert.notDeepEqual(seqA, seqC);
   for (const x of seqA) assert.ok(x >= 0 && x < 1);
+});
+
+// ---------------------------------------------------------------------------
+// Mode Obstacle và Blitz
+// ---------------------------------------------------------------------------
+
+test('levels.json: có 20 bài Obstacle (mate in 1–3) và 40 bài Blitz (mate in 1–2)', () => {
+  assert.equal(data.modes.obstacle.length, 20);
+  assert.equal(data.modes.blitz.length, 40);
+  assert.ok(data.modes.obstacle.every((l) => l.mateIn <= 3 && l.obstacles === true));
+  assert.ok(data.modes.blitz.every((l) => l.mateIn <= 2));
+  // Obstacle xếp từ ít nước đến nhiều nước.
+  const n = data.modes.obstacle.map((l) => l.mateIn);
+  assert.deepEqual(n, [...n].sort((a, b) => a - b));
+});
+
+test('obstaclesMatter: vật cản chỉ để trang trí thì bị loại', () => {
+  // Level mẫu GDD + 1 vật cản ở c2 không chắn gì: bỏ vật cản đi vẫn y hệt.
+  const deco = parseFen('k3/2K1/2x1/3R w');
+  assert.equal(hasInnerObstacle(deco), true);
+  assert.equal(obstaclesMatter(deco, 1, ['d1a1']), false);
+  // Bài Obstacle thật trong levels.json: vật cản có tác dụng.
+  const real = data.modes.obstacle[0];
+  assert.equal(obstaclesMatter(parseFen(real.fen), real.mateIn, real.solution), true);
+  // Vật cản ở mép không tính là "bên trong bàn".
+  assert.equal(hasInnerObstacle(parseFen('x3/2K1/k3/3R w')), false);
+});
+
+test('verifyLevels bắt lỗi mode: thiếu bài, mate quá dài', () => {
+  const bad = copy(data);
+  bad.modes.blitz.pop();
+  bad.modes.obstacle[0] = { ...bad.modes.obstacle[0], mateIn: 4 };
+  const errors = verifyLevels(bad, { deep: false }).join('\n');
+  assert.match(errors, /mode blitz cần 40 bài/);
+  assert.match(errors, /mate in ≤ 3/);
 });

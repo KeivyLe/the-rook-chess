@@ -91,3 +91,24 @@ test('resetSave xoá dữ liệu cũ', () => {
   assert.deepEqual(resetSave(storage), createSave());
   assert.equal(loadSave(storage).status, 'new');
 });
+
+test('save v1 (bản cũ có quảng cáo) được chuyển lên v2, giữ nguyên tiến trình', () => {
+  const storage = fakeStorage();
+  storage.setItem(SAVE_KEY, JSON.stringify({
+    version: 1,
+    progress: { unlockedLevel: 12, solved: { 1: { hintUsed: false } }, daily: { lastDate: '20261113', streak: 2, bestStreak: 2, solvedDates: ['20261112', '20261113'] } },
+    economy: { coins: 345, adsDate: '20261113', adsWatched: 3, noAds: true, levelsSinceAd: 2 },
+    settings: { sound: false, music: true, vibration: true, showLegalMoves: true },
+  }));
+  const { save, status } = loadSave(storage);
+  assert.equal(status, 'loaded');
+  assert.equal(save.version, SAVE_VERSION);
+  assert.equal(save.progress.unlockedLevel, 12);
+  assert.equal(save.progress.daily.streak, 2);
+  assert.equal(save.economy.coins, 345);
+  for (const old of ['adsDate', 'adsWatched', 'noAds', 'levelsSinceAd']) assert.equal(old in save.economy, false, old);
+  assert.equal(save.settings.sound, false);
+  assert.deepEqual(save.store, createSave().store);
+  assert.deepEqual(save.modes, createSave().modes);
+  assert.deepEqual(save.trophies, createSave().trophies);
+});

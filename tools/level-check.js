@@ -13,7 +13,7 @@
 //      trong N nước. Nhờ vậy puzzle có một ý tưởng rõ ràng để người chơi tìm.
 // =============================================================================
 
-import { parseFen, make, undo, moveToString, squareName, colorOf, typeOf, rankOf, opponent, EMPTY } from '../src/board.js';
+import { parseFen, make, undo, moveToString, squareName, colorOf, typeOf, rankOf, opponent, EMPTY, HOLE } from '../src/board.js';
 import { legalMoves, inCheck, findKing } from '../src/movegen.js';
 import { findMate, isStillWinning } from '../src/solver.js';
 
@@ -104,4 +104,25 @@ export function analyzePuzzle(fenOrBoard, n) {
 
   const d = difficultyScore(board, result);
   return { ok: true, solution: result.line, nodes: result.nodes, difficulty: d.score, quiet: d.quiet, sacrifice: d.sacrifice };
+}
+
+// ---------------------------------------------------------------------------
+// Mode Obstacle
+// ---------------------------------------------------------------------------
+
+/** Có vật cản bên trong bàn không (ô 'x' không nằm ở mép). */
+export function hasInnerObstacle(board) {
+  const { width: w, height: h } = board;
+  return board.squares.some((p, sq) => p === HOLE && sq % w > 0 && sq % w < w - 1 && sq >= w && sq < (h - 1) * w);
+}
+
+/**
+ * Vật cản có "tác dụng" không: thay mọi vật cản bằng ô trống rồi phân tích lại.
+ * Nếu khi đó thế cờ không còn là puzzle đạt chuẩn mate in n, hoặc nước đầu khác
+ * đi, thì vật cản đúng là một phần của bài. Nếu y hệt thì vật cản chỉ để trang trí.
+ */
+export function obstaclesMatter(board, n, solution) {
+  const open = { ...board, squares: board.squares.map((p) => (p === HOLE ? EMPTY : p)), history: [] };
+  const a = analyzePuzzle(open, n);
+  return !a.ok || a.solution[0] !== solution[0];
 }

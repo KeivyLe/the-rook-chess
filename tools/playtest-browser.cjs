@@ -10,9 +10,11 @@
 // Script tự bật tools/serve.js ở cổng 8123, mở game với dữ liệu lưu trống, rồi:
 //   - chơi lần lượt level 1 → 60: mỗi lượt hỏi bộ giải nước đúng (bestHint),
 //     bấm ô đi và ô đến, chọn quân nếu phong cấp, chờ đối thủ đáp;
-//   - bấm "Level tiếp" ở màn thắng, gặp quảng cáo xen giữa thì chờ hết giờ và bấm Đóng;
+//   - bấm "Level tiếp" ở màn thắng; gặp hộp mời Starter Bundle (sau level 10 và
+//     sau Daily đầu tiên) thì bấm "Để sau";
+//   - KHÔNG được có quảng cáo nào xuất hiện (kế hoạch MKT: không quảng cáo xen giữa);
 //   - chơi Daily hôm nay qua nút Daily;
-//   - cuối cùng kiểm tra tiến trình và coin đã lưu đúng, không có lỗi JavaScript nào.
+//   - cuối cùng kiểm tra tiến trình, coin và Trophy đã lưu đúng, không có lỗi JavaScript nào.
 // File đuôi .cjs vì Playwright được nạp bằng require().
 // =============================================================================
 
@@ -61,16 +63,21 @@ async function playCurrentLevel(page) {
   throw new Error('chưa thắng sau 6 lượt');
 }
 
-/** Sau khi thắng: bấm nút ở hộp thắng, xử lý quảng cáo xen giữa nếu có. Trả về true nếu có quảng cáo. */
+/**
+ * Sau khi thắng: bấm nút ở hộp thắng. Nếu hiện hộp mời Starter Bundle thì bấm
+ * "Để sau". Trả về { ad, starter }: có quảng cáo xuất hiện không (phải là false),
+ * có hộp Starter Bundle không.
+ */
 async function continueAfterWin(page) {
   await page.locator('.win-dialog .btn.primary').click({ timeout: 5000 });
   await sleep(250);
-  if (await page.locator('.ad-overlay').count()) {
-    await page.locator('.ad-close:not([disabled])').click({ timeout: 8000 });
+  const ad = (await page.locator('.ad-overlay').count()) > 0;
+  const starter = (await page.locator('.dialog h2:has-text("Starter Bundle")').count()) > 0;
+  if (starter) {
+    await page.locator('button:has-text("Để sau")').click();
     await sleep(250);
-    return true;
   }
-  return false;
+  return { ad, starter };
 }
 
 (async () => {
@@ -83,6 +90,7 @@ async function continueAfterWin(page) {
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
   const failures = [];
   const ads = [];
+  const starters = [];
   const started = Date.now();
 
   try {
@@ -104,9 +112,11 @@ async function continueAfterWin(page) {
       }
       const ms = Date.now() - t;
       if (id < total) {
-        if (await continueAfterWin(page)) ads.push(id);
+        const r = await continueAfterWin(page);
+        if (r.ad) ads.push(id);
+        if (r.starter) starters.push(id);
       }
-      process.stdout.write(`level ${id} ✓ (${ms} ms)${ads.at(-1) === id ? ' + quảng cáo' : ''}\n`);
+      process.stdout.write(`level ${id} ✓ (${ms} ms)${starters.at(-1) === id ? ' + hộp Starter Bundle' : ''}\n`);
     }
 
     // Daily qua màn chọn level.
@@ -114,7 +124,9 @@ async function continueAfterWin(page) {
     await page.locator('.hub-btn.daily').click();
     await page.waitForSelector('.board .square');
     await playCurrentLevel(page);
-    await page.locator('.win-dialog .btn.primary').click({ timeout: 5000 });
+    const afterDaily = await continueAfterWin(page);
+    if (afterDaily.ad) ads.push('daily');
+    if (afterDaily.starter) starters.push('daily');
 
     const save = await page.evaluate(() => JSON.parse(localStorage.getItem('the-rook-chess/save')));
     const solved = Object.keys(save.progress.solved).length;
@@ -122,10 +134,14 @@ async function continueAfterWin(page) {
     if (solved !== total) failures.push(`đã lưu ${solved}/${total} level`);
     if (save.economy.coins !== expectedCoins) failures.push(`coin ${save.economy.coins}, mong đợi ${expectedCoins}`);
     if (save.progress.daily.streak !== 1) failures.push(`streak Daily ${save.progress.daily.streak}, mong đợi 1`);
-    const expectedAds = [];
-    for (let id = 11, n = 0; id < total; id++) if (++n % 3 === 0) expectedAds.push(id);
-    if (ads.join() !== expectedAds.join()) failures.push(`quảng cáo sau level ${ads.join(',')}, mong đợi ${expectedAds.join(',')}`);
-    console.log(`Đã lưu: ${solved} level, ${save.economy.coins} coin, streak ${save.progress.daily.streak}; quảng cáo sau level ${ads.join(', ')}`);
+    if (ads.length) failures.push(`có quảng cáo xuất hiện sau ${ads.join(', ')} (kế hoạch: không quảng cáo xen giữa)`);
+    // Starter Bundle: mời sau level 10 và sau Daily đầu tiên (đang trong 7 ngày đầu).
+    if (starters.join() !== '10,daily') failures.push(`hộp Starter Bundle sau ${starters.join(',') || 'không lần nào'}, mong đợi 10,daily`);
+    const trophies = Object.keys(save.trophies.unlocked);
+    for (const t of ['first-mate', 'chapter-1', 'chapter-2', 'chapter-3', 'chapter-4', 'daily-1', 'no-hint-10', 'perfect-25']) {
+      if (!trophies.includes(t)) failures.push(`chưa có Trophy ${t}`);
+    }
+    console.log(`Đã lưu: ${solved} level, ${save.economy.coins} coin, streak ${save.progress.daily.streak}; quảng cáo: ${ads.length}; Starter Bundle sau: ${starters.join(', ')}; Trophy: ${trophies.length}`);
   } catch (e) {
     failures.push(`lỗi: ${e.message}`);
   } finally {

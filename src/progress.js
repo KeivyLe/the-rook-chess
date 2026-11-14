@@ -44,16 +44,20 @@ export function levelStatus(progress, id) {
 /**
  * Ghi nhận người chơi vừa thắng level chính `id`.
  *   hintUsed  : lần này có dùng gợi ý không.
+ *   perfect   : lần này giải "hoàn hảo" (không gợi ý, chưa từng đi lệch).
  *   totalLevels: tổng số level, để không mở quá level cuối.
  * Mở khoá level kế tiếp. Nếu giải lại level cũ: giữ kết quả TỐT nhất
- * (đã từng giải không gợi ý thì vẫn tính là không gợi ý).
+ * (đã từng giải không gợi ý / hoàn hảo thì vẫn giữ). Trophy đếm các cờ này.
  * Trả về { firstTime, unlocked } với unlocked là id level vừa được mở (hoặc null).
  */
-export function markSolved(progress, id, { hintUsed = false, totalLevels = Infinity } = {}) {
+export function markSolved(progress, id, { hintUsed = false, perfect = false, totalLevels = Infinity } = {}) {
   if (!isUnlocked(progress, id)) throw new Error(`Level ${id} chưa mở, không thể ghi là đã giải`);
   const before = progress.solved[id];
   const firstTime = !before;
-  progress.solved[id] = { hintUsed: before ? before.hintUsed && hintUsed : hintUsed };
+  progress.solved[id] = {
+    hintUsed: before ? before.hintUsed && hintUsed : hintUsed,
+    perfect: Boolean(before?.perfect) || perfect,
+  };
 
   let unlocked = null;
   if (id === progress.unlockedLevel && id < totalLevels) {
@@ -98,13 +102,37 @@ function dayNumber(key) {
   return Math.round(Date.UTC(y, m - 1, d) / 86400000);
 }
 
-/** Ngày liền trước của một ngày "yyyymmdd", ví dụ "20261201" → "20261130". */
-export function previousDateKey(key) {
-  const date = new Date((dayNumber(key) - 1) * 86400000);
+/**
+ * Số ngày từ ngày `from` tới ngày `to` (cả hai dạng "yyyymmdd").
+ * Ví dụ daysBetween("20261130", "20261202") = 2. Dùng cho hạn dùng thử Rook Pass,
+ * Starter Bundle 7 ngày đầu (store.js) và tuần của Blitz.
+ */
+export function daysBetween(from, to) {
+  return dayNumber(to) - dayNumber(from);
+}
+
+/** Cộng `n` ngày vào ngày "yyyymmdd", ví dụ addDays("20261130", 2) = "20261202". */
+export function addDays(key, n) {
+  const date = new Date((dayNumber(key) + n) * 86400000);
   const y = date.getUTCFullYear();
   const m = String(date.getUTCMonth() + 1).padStart(2, '0');
   const d = String(date.getUTCDate()).padStart(2, '0');
   return `${y}${m}${d}`;
+}
+
+/**
+ * Khoá tuần (thứ Hai đầu tuần, dạng "yyyymmdd") của ngày `key`. Hai ngày cùng tuần
+ * có cùng khoá; Blitz Mate dùng nó để giữ kỷ lục theo tuần. 01/01/1970 là thứ Năm,
+ * nên (số ngày + 3) chia 7 dư 0 là thứ Hai.
+ */
+export function weekKey(key) {
+  const n = dayNumber(key);
+  return addDays(key, -((n + 3) % 7));
+}
+
+/** Ngày liền trước của một ngày "yyyymmdd", ví dụ "20261201" → "20261130". */
+export function previousDateKey(key) {
+  return addDays(key, -1);
 }
 
 // ---------------------------------------------------------------------------

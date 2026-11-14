@@ -5,6 +5,10 @@ Game **giải đố chiếu hết** trên bàn cờ nhỏ, viết bằng HTML + 
 Pocket Chess: mỗi level là một thế cờ dựng sẵn, bạn phải chiếu hết trong N nước.
 
 - 60 level chính trong 4 chương (mate in 1 → 4) và 30 Daily Puzzle.
+- 2 mode thêm: **Obstacle** (20 thế cờ có vật cản trên bàn) và **Blitz Mate** (giải càng
+  nhiều càng tốt trong 3 phút, giữ kỷ lục tuần). Mỗi mode chơi thử miễn phí 5 bài.
+- **Trophy** Đồng / Bạc / Vàng / Bạch kim, **skin** bàn cờ và quân cờ (Cẩm thạch, Neon,
+  Hoàng gia), **Rook Pass** — theo "Kế hoạch MKT The Rook Chess".
 - Bàn từ 3×4 đến 6×6, có bàn hình dạng lạ (khuyết ô), có level bạn cầm quân Đen.
 - Mọi level do máy **tự sinh và tự kiểm tra** bằng bộ giải alpha-beta: chắc chắn có
   chiếu hết đúng N nước, không có cách chiếu hết sớm hơn, nước đầu là duy nhất.
@@ -36,13 +40,24 @@ link là `https://keivyle.github.io/the-rook-chess/`.
 | Khởi đầu | 100 |
 | Giải level lần đầu | +10 (thêm +5 nếu hoàn hảo) |
 | Daily Puzzle | +20 (thêm +5 nếu hoàn hảo) |
-| Xem quảng cáo (giả lập, tối đa 5 lần/ngày) | +25 |
 | Gợi ý 1: tô sáng quân cần đi | −20 |
 | Gợi ý 2: hiện nước tiếp theo | −40 |
 | Gợi ý 3: toàn bộ lời giải | −100 |
 
-Quảng cáo và cửa hàng chỉ là **giả lập** cho bài tập: không có quảng cáo hay thanh toán thật.
-Tiến trình được lưu trong trình duyệt (localStorage).
+Không có quảng cáo xen giữa level. Khi bạn đã đi sai 2 lần ở một bài, bảng gợi ý có thêm
+nút **xem quảng cáo để nhận 1 gợi ý** (tối đa 1 lần mỗi ngày, không thưởng coin).
+
+**Shop** (đều là **giả lập** cho bài tập, bấm mua chỉ mở khoá trong game, không có thanh toán thật):
+
+| Món | Giá đề xuất | Nhận được |
+|---|---|---|
+| Rook Pass | $4.99/tháng, dùng thử 7 ngày | Mọi mode, gợi ý miễn phí không giới hạn, skin quân "Hoàng gia", không thấy quảng cáo |
+| Starter Bundle | $9.99, chỉ 7 ngày đầu | Mode Obstacle + bàn và quân Cẩm thạch |
+| Skin bàn / skin quân | $2.99 mỗi skin | Cẩm thạch, Neon (xem thử miễn phí trong Daily) |
+| Bộ skin (bàn + quân) | $4.99 | Rẻ hơn mua lẻ |
+| Mode Obstacle / Blitz Mate | $3.99 mỗi mode | Chơi hết mode (5 bài đầu miễn phí) |
+
+Tiến trình, Trophy và món đã mua được lưu trong trình duyệt (localStorage).
 
 ## Chạy trên máy
 
@@ -62,8 +77,8 @@ Rồi mở http://localhost:8080. Điện thoại cùng mạng wifi mở `http:/
 | `npm start` | Server tĩnh ở cổng 8080 |
 | `npm test` | Chạy toàn bộ test (khoảng 10 giây) |
 | `npm run levels:verify` | Kiểm tra lại mọi level trong `levels.json` bằng bộ giải |
-| `npm run levels:generate` | Sinh lại `levels.json` (khoảng 100 giây; cùng seed ra cùng file) |
-| `npm run playtest` | "Người chơi máy" chơi hết 90 level × 3 ván, thử cả đi lệch tới khi ván dừng rồi Undo |
+| `npm run levels:generate` | Sinh lại `levels.json` (khoảng 3 phút; cùng seed ra cùng file) |
+| `npm run playtest` | "Người chơi máy" chơi hết 150 bài (cả 2 mode) × 3 ván, thử cả đi lệch tới khi ván dừng rồi Undo |
 | `npm run playtest:browser` | Chơi 60 level qua giao diện thật trên Chromium (cần Playwright) |
 
 ## Cấu trúc code
@@ -71,7 +86,7 @@ Rồi mở http://localhost:8080. Điện thoại cùng mạng wifi mở `http:/
 ```
 index.html            trang duy nhất
 css/style.css         toàn bộ giao diện
-levels.json           60 level chính + 30 Daily (do tools/generate-levels.js sinh ra)
+levels.json           60 level chính + 30 Daily + 20 Obstacle + 40 Blitz (do tools/generate-levels.js sinh ra)
 src/
   board.js            bàn cờ kích thước tùy ý, FEN mở rộng (có ô lỗ 'x'), make/undo
   movegen.js          luật đi 6 loại quân, phong cấp, nhập thành, bắt tốt qua đường,
@@ -79,7 +94,10 @@ src/
   solver.js           bộ giải alpha-beta + bảng băm: tìm chiếu hết, chấm nước,
                       đối thủ phòng thủ, gợi ý
   puzzle.js           máy trạng thái một level (lượt mình → chấm → đối thủ → thắng)
-  economy.js          coin, giá gợi ý, quảng cáo và cửa hàng giả lập
+  economy.js          coin, giá gợi ý, rewarded giả lập (1 lần/ngày khi sai 2 lần)
+  store.js            cửa hàng giả lập: Rook Pass, Starter Bundle, skin, mode, chơi thử 5 bài
+  modes.js            tiến trình mode Obstacle, kỷ lục Blitz (theo tuần)
+  trophies.js         Trophy Đồng / Bạc / Vàng / Bạch kim
   progress.js         mở khoá level, Daily theo ngày, chuỗi ngày (streak)
   storage.js          lưu/đọc tiến trình (localStorage, chịu lỗi)
   ui/                 giao diện: vẽ bàn, quân cờ SVG, âm thanh Web Audio, các màn hình
