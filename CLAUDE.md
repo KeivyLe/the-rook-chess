@@ -52,7 +52,7 @@ src/
     main.js        # fetch levels.json → startApp
     app.js         # các màn hình + nối logic với hình ảnh (luồng chơi, gợi ý, thắng, Ad, Shop, Settings)
     board-view.js  # vẽ bàn/quân bằng div tuyệt đối, cạnh dày 3D, xoay bàn, animation trượt/rung/đổ Vua
-    pieces.js      # quân cờ SVG tự vẽ (khung 100×120)
+    pieces.js      # quân cờ SVG theo artstyle Ivory / Espresso của chủ dự án (khung 100×120)
     sound.js       # âm thanh tổng hợp Web Audio (không file ngoài)
     themes.js      # bảng màu nền theo level, màu Daily
     dom.js         # h() tạo phần tử, wait(), nextFrame()
@@ -183,6 +183,14 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   bàn cờ, 2 nút tròn: gợi ý và Undo (mờ khi không dùng được).
 - **Hình ảnh tự làm**, chỉ theo bố cục của game gốc: quân SVG, bảng màu, icon đều
   tự vẽ. Không dùng font/ảnh/âm thanh bên ngoài.
+- **Artstyle quân cờ "Ivory / Espresso"** (do chủ dự án thiết kế, ảnh mẫu là bảng
+  6 quân × 2 màu trên 2 màu ô): quân dẹt nhìn thẳng như khắc nổi, góc bo tròn, viền
+  mảnh cùng tông (không viền đen). Ivory: thân `#fdeccf → #f1d9b2`, viền `#a98a60`.
+  Espresso: thân `#6c4a33 → #55382a`, viền `#2f1d12`. Khối nổi = 3 lớp trong
+  `pieceSvg`: bản sao đậm lệch xuống 2,6 (độ dày) → thân phẳng → filter ánh sáng
+  (`feSpecularLighting`, đèn góc trên-trái) cho từng bộ phận. Nét khắc chìm (bờm Mã)
+  = nét đậm + nét sáng lệch xuống. Ô bàn: `--sq-light #d4bc9b`, `--sq-dark #a08065`.
+  Sửa dáng quân: đổi toạ độ trong `SHAPES`, xem thử bằng cách so cạnh ảnh mẫu.
 - **Bàn cờ:** ô là div đặt bằng `transform: translate`; lỗ không vẽ; dải cạnh dày
   vẽ dưới mỗi ô mà bên dưới (trên màn hình) là mép hoặc lỗ. Người chơi cầm Đen
   thì xoay 180° (phía người chơi luôn ở dưới). Quân hàng dưới có z-index cao hơn.
