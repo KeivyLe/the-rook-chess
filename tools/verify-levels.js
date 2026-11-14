@@ -13,6 +13,9 @@
 //     nước đầu trùng với nước đầu duy nhất mà bộ giải tìm ra.
 // Cả bộ phải:
 //   - đúng 60 level chính (15/20/15/10 cho mate in 1/2/3/4) và 30 level Daily;
+//   - mode Obstacle: 20 bài mate in 1–3, mỗi bài có vật cản bên trong bàn và vật
+//     cản phải có tác dụng (bỏ đi thì lời giải khác / không còn là puzzle);
+//   - mode Blitz: 40 bài mate in 1–2;
 //   - id không trùng, level chính đánh số 1..60 liên tục;
 //   - level chính không giảm số nước (chương sau khó hơn chương trước);
 //   - không có hai level trùng nhau (kể cả đối xứng gương trái–phải);
@@ -25,12 +28,15 @@ import { dirname, join } from 'node:path';
 
 import { parseFen, make, toFen } from '../src/board.js';
 import { findMove, isCheckmate } from '../src/movegen.js';
-import { analyzePuzzle } from './level-check.js';
+import { analyzePuzzle, hasInnerObstacle, obstaclesMatter } from './level-check.js';
 
 /** Số level chính cần có cho mỗi số nước. */
 export const MAIN_COUNTS = { 1: 15, 2: 20, 3: 15, 4: 10 };
 /** Số level Daily cần có. */
 export const DAILY_COUNT = 30;
+/** Số bài của mỗi mode và số nước tối đa. */
+export const MODE_COUNTS = { obstacle: 20, blitz: 40 };
+export const MODE_MAX_MATE = { obstacle: 3, blitz: 2 };
 
 /**
  * Các thế cờ đã biết của game gốc (chép từ ảnh chụp màn hình, xem
@@ -118,6 +124,16 @@ export function verifyLevels(data, options = {}) {
     if (have !== count) errors.push(`cần ${count} level chính mate in ${n}, đang có ${have}`);
   }
   if (daily.length !== DAILY_COUNT) errors.push(`cần ${DAILY_COUNT} level Daily, đang có ${daily.length}`);
+  const modes = data.modes ?? {};
+  const modeLevels = [];
+  for (const [mode, count] of Object.entries(MODE_COUNTS)) {
+    const list = modes[mode] ?? [];
+    if (list.length !== count) errors.push(`mode ${mode} cần ${count} bài, đang có ${list.length}`);
+    for (const l of list) {
+      if (l.mateIn > MODE_MAX_MATE[mode]) errors.push(`${l.id}: mode ${mode} chỉ dùng mate in ≤ ${MODE_MAX_MATE[mode]}`);
+      modeLevels.push({ mode, level: l });
+    }
+  }
 
   // Đánh số và thứ tự độ khó của chuỗi chính.
   levels.forEach((l, i) => {
@@ -129,7 +145,8 @@ export function verifyLevels(data, options = {}) {
   const ids = new Set();
   const seen = new Map();
   const originals = new Set(ORIGINAL_POSITIONS.map(canonicalFen));
-  for (const l of [...levels, ...daily]) {
+  const all = [...levels, ...daily, ...modeLevels.map((m) => m.level)];
+  for (const l of all) {
     if (ids.has(l.id)) errors.push(`id ${l.id} bị trùng`);
     ids.add(l.id);
     let key;
@@ -140,7 +157,16 @@ export function verifyLevels(data, options = {}) {
   }
 
   // Kiểm tra từng level bằng bộ giải.
-  if (deep) for (const l of [...levels, ...daily]) errors.push(...verifyLevel(l));
+  if (deep) {
+    for (const l of all) errors.push(...verifyLevel(l));
+    for (const { mode, level } of modeLevels) {
+      if (mode !== 'obstacle') continue;
+      let board;
+      try { board = parseFen(level.fen); } catch { continue; }
+      if (!hasInnerObstacle(board)) errors.push(`${level.id}: không có vật cản bên trong bàn`);
+      else if (!obstaclesMatter(board, level.mateIn, level.solution)) errors.push(`${level.id}: vật cản không có tác dụng (bỏ đi vẫn y hệt)`);
+    }
+  }
   return errors;
 }
 
@@ -152,7 +178,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const errors = verifyLevels(data);
   const secs = ((Date.now() - started) / 1000).toFixed(1);
   if (errors.length === 0) {
-    console.log(`OK: ${data.levels.length} level chính + ${data.daily.length} level Daily đều đạt (${secs}s)`);
+    const m = data.modes ?? {};
+    console.log(`OK: ${data.levels.length} level chính + ${data.daily.length} Daily + ${(m.obstacle ?? []).length} Obstacle + ${(m.blitz ?? []).length} Blitz đều đạt (${secs}s)`);
   } else {
     for (const e of errors) console.log('LỖI: ' + e);
     console.log(`${errors.length} lỗi (${secs}s)`);

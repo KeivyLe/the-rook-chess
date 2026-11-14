@@ -1,8 +1,10 @@
 // =============================================================================
 // storage.js — Lưu và đọc dữ liệu chơi (save data, GDD mục 5.4 và 8.4).
 //
-// Dữ liệu lưu gồm 3 phần, mỗi phần do một file quản lý:
-//   progress (progress.js), economy (economy.js), settings (cài đặt, ở đây).
+// Dữ liệu lưu gồm các phần, mỗi phần do một file quản lý:
+//   progress (progress.js), economy (economy.js), store (store.js: Rook Pass,
+//   skin, mode đã mua), modes (modes.js: Obstacle, Blitz), trophies (trophies.js),
+//   settings (cài đặt, ở đây).
 //
 // Lưu vào localStorage của trình duyệt dưới một khoá duy nhất, dạng JSON.
 // localStorage có thể KHÔNG dùng được: chế độ ẩn danh, người dùng chặn dữ liệu
@@ -17,11 +19,19 @@
 
 import { createProgress } from './progress.js';
 import { createEconomy } from './economy.js';
+import { createStore } from './store.js';
+import { createModes } from './modes.js';
+import { createTrophies } from './trophies.js';
 
 /** Khoá trong localStorage. */
 export const SAVE_KEY = 'the-rook-chess/save';
-/** Phiên bản định dạng save. Tăng lên khi đổi cấu trúc, và viết thêm bước chuyển đổi. */
-export const SAVE_VERSION = 1;
+/**
+ * Phiên bản định dạng save. Tăng lên khi đổi cấu trúc, và viết thêm bước chuyển
+ * đổi trong migrateSave.
+ *   1: progress, economy (có quảng cáo xen giữa, +25 coin/quảng cáo), settings.
+ *   2: theo kế hoạch MKT: bỏ các trường quảng cáo cũ; thêm store, modes, trophies.
+ */
+export const SAVE_VERSION = 2;
 
 /** Cài đặt mặc định (màn Settings, GDD mục 7.1). */
 export function createSettings() {
@@ -30,7 +40,33 @@ export function createSettings() {
 
 /** Tạo save data mới cho người chơi lần đầu mở game. */
 export function createSave() {
-  return { version: SAVE_VERSION, progress: createProgress(), economy: createEconomy(), settings: createSettings() };
+  return {
+    version: SAVE_VERSION,
+    progress: createProgress(),
+    economy: createEconomy(),
+    store: createStore(),
+    modes: createModes(),
+    trophies: createTrophies(),
+    settings: createSettings(),
+  };
+}
+
+/**
+ * Chuyển save cũ lên phiên bản hiện tại. Không bao giờ làm mất tiến trình:
+ * level đã giải, coin, chuỗi Daily giữ nguyên.
+ *   1 → 2: bỏ các trường của quảng cáo cũ (adsDate, adsWatched, noAds,
+ *          levelsSinceAd); store / modes / trophies chưa có sẽ lấy mặc định ở bước
+ *          mergeDefaults. Người đã "mua" Remove Ads ở bản cũ: không còn quảng cáo
+ *          xen giữa nữa nên không cần bù gì.
+ * Trả về save đã chuyển, hoặc null nếu phiên bản không hiểu được.
+ */
+export function migrateSave(data) {
+  if (data.version === 1) {
+    const economy = isPlainObject(data.economy) ? { ...data.economy } : {};
+    for (const key of ['adsDate', 'adsWatched', 'noAds', 'levelsSinceAd']) delete economy[key];
+    data = { ...data, economy, version: 2 };
+  }
+  return data.version === SAVE_VERSION ? data : null;
 }
 
 /**
@@ -88,8 +124,9 @@ export function loadSave(storage = defaultStorage()) {
   }
   if (raw === null || raw === undefined) return { save: createSave(), status: 'new' };
   try {
-    const data = JSON.parse(raw);
-    if (!isPlainObject(data) || data.version !== SAVE_VERSION) return { save: createSave(), status: 'corrupt' };
+    const parsed = JSON.parse(raw);
+    const data = isPlainObject(parsed) ? migrateSave(parsed) : null;
+    if (!data) return { save: createSave(), status: 'corrupt' };
     return { save: mergeDefaults(createSave(), data), status: 'loaded' };
   } catch {
     return { save: createSave(), status: 'corrupt' };

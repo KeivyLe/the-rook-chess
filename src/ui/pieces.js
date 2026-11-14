@@ -1,6 +1,7 @@
 // =============================================================================
 // ui/pieces.js — Quân cờ vẽ bằng SVG theo bộ artstyle "Ivory / Espresso" của
-// chủ dự án (không dùng hình hay font bên ngoài).
+// chủ dự án (không dùng hình hay font bên ngoài). Cùng một dáng quân, đổi bảng
+// màu là ra skin khác: Cẩm thạch, Neon, Hoàng gia (xem PALETTES, store.js SKINS).
 //
 // Đặc điểm của artstyle:
 //   - Quân là một khối dẹt nhìn thẳng (như khắc nổi), góc bo tròn, viền mảnh
@@ -16,27 +17,48 @@
 // Bóng đổ dưới quân làm bằng CSS (filter drop-shadow) trong style.css.
 // =============================================================================
 
-/** Bảng màu của 2 bên, lấy từ ảnh artstyle. */
-const PALETTE = {
-  w: { // Ivory
-    top: '#fdeccf',
-    bottom: '#f1d9b2',
-    edge: '#a98a60',      // viền mảnh
-    depth: '#c3a374',     // độ dày phía dưới
-    groove: '#b8996b',    // nét khắc chìm
-    grooveLight: 'rgba(255, 250, 238, 0.9)',
-    shine: 0.55,          // độ mạnh ánh sáng ở mép
+/**
+ * Bảng màu theo skin quân cờ, mỗi skin có màu cho 2 bên (w = Trắng, b = Đen).
+ *   ivory  : Ivory / Espresso — artstyle của chủ dự án, skin mặc định.
+ *   marble : Cẩm thạch — trắng ngà và đen xám, có vân đá (veins).
+ *   neon   : Neon — thân tím than, viền phát sáng xanh lơ (Trắng) / hồng (Đen).
+ *   royal  : Hoàng gia — vàng và mã não viền vàng; độc quyền Rook Pass.
+ * Các trường: top/bottom (dải màu thân), edge (viền), depth (độ dày), groove /
+ * grooveLight (nét khắc), shine (độ sáng mép), veins (màu vân đá, nếu có),
+ * glow (viền phát sáng, nếu có).
+ */
+const PALETTES = {
+  ivory: {
+    w: { top: '#fdeccf', bottom: '#f1d9b2', edge: '#a98a60', depth: '#c3a374', groove: '#b8996b', grooveLight: 'rgba(255, 250, 238, 0.9)', shine: 0.55 },
+    b: { top: '#6c4a33', bottom: '#55382a', edge: '#2f1d12', depth: '#38241a', groove: '#3a2519', grooveLight: 'rgba(255, 226, 196, 0.16)', shine: 0.32 },
   },
-  b: { // Espresso
-    top: '#6c4a33',
-    bottom: '#55382a',
-    edge: '#2f1d12',
-    depth: '#38241a',
-    groove: '#3a2519',
-    grooveLight: 'rgba(255, 226, 196, 0.16)',
-    shine: 0.32,
+  marble: {
+    w: { top: '#fbfbf9', bottom: '#dfe1e4', edge: '#8c929b', depth: '#b9bec6', groove: '#a3a9b2', grooveLight: 'rgba(255, 255, 255, 0.9)', shine: 0.5, veins: 'rgba(120, 128, 140, 0.45)' },
+    b: { top: '#4a5059', bottom: '#2a2e35', edge: '#101215', depth: '#1b1e23', groove: '#15171b', grooveLight: 'rgba(255, 255, 255, 0.14)', shine: 0.4, veins: 'rgba(210, 216, 225, 0.32)' },
+  },
+  neon: {
+    w: { top: '#251d44', bottom: '#17112e', edge: '#5ef2ff', depth: '#127a86', groove: '#5ef2ff', grooveLight: 'rgba(94, 242, 255, 0.25)', shine: 0.25, glow: '#5ef2ff' },
+    b: { top: '#251d44', bottom: '#17112e', edge: '#ff52d9', depth: '#7c1f6c', groove: '#ff52d9', grooveLight: 'rgba(255, 82, 217, 0.25)', shine: 0.25, glow: '#ff52d9' },
+  },
+  royal: {
+    w: { top: '#fff1bf', bottom: '#e0ac45', edge: '#8a5a12', depth: '#a8751f', groove: '#a57224', grooveLight: 'rgba(255, 248, 220, 0.85)', shine: 0.7 },
+    b: { top: '#3a3536', bottom: '#151213', edge: '#d7ad4f', depth: '#0b0909', groove: '#d7ad4f', grooveLight: 'rgba(0, 0, 0, 0.35)', shine: 0.35 },
   },
 };
+
+/** Màu pháo giấy khi chiếu hết, theo skin quân cờ ("hiệu ứng chiếu hết" của skin). */
+export const SKIN_CONFETTI = {
+  ivory: ['#f2c14e', '#f78c6b', '#83d483', '#4cc9f0', '#f4f1de', '#e76f51'],
+  marble: ['#ffffff', '#d9dde3', '#9aa3ad', '#4a5059', '#c7b7a3'],
+  neon: ['#5ef2ff', '#ff52d9', '#b388ff', '#7cff6b', '#ffe45e'],
+  royal: ['#f7d774', '#e0ac45', '#fff1bf', '#8a5a12', '#ffffff'],
+};
+
+/**
+ * Đường vân đá cẩm thạch (khung 100 × 120). Vẽ đè lên thân quân, chỉ trong phạm
+ * vi hình quân (dùng clipPath), nên mỗi quân có vân như được tạc từ một khối đá.
+ */
+const VEINS = 'M-5 30 C20 22 30 45 55 38 S90 20 110 34 M-5 70 C15 58 35 80 60 66 S95 55 110 72 M10 120 C25 95 40 105 52 88 S80 80 95 95 M40 -5 C48 15 38 25 47 45';
 
 /** Bệ chung: một phiến dẹt bo góc ở dưới cùng. */
 const BASE = '<rect x="15" y="96" width="70" height="16" rx="5"/>';
@@ -132,21 +154,37 @@ function reliefFilter(id, shine) {
 }
 
 /**
- * Trả về chuỗi SVG của một quân. `piece` là ký tự FEN ('K', 'q', ...).
- * id của gradient/bộ lọc trùng nhau giữa các quân cùng màu là cố ý: nội dung
- * giống hệt nhau nên trình duyệt dùng cái nào cũng được.
+ * Trả về chuỗi SVG của một quân. `piece` là ký tự FEN ('K', 'q', ...), `skin` là
+ * id skin quân cờ (xem PALETTES; không biết thì dùng 'ivory').
+ * id của gradient/bộ lọc trùng nhau giữa các quân cùng skin và màu là cố ý: nội
+ * dung giống hệt nhau nên trình duyệt dùng cái nào cũng được.
  */
-export function pieceSvg(piece) {
+export function pieceSvg(piece, skin = 'ivory') {
   const color = piece === piece.toUpperCase() ? 'w' : 'b';
-  const shape = SHAPES[piece.toLowerCase()];
-  const c = PALETTE[color];
-  const grad = `rc-fill-${color}`;
-  const relief = `rc-relief-${color}`;
+  const type = piece.toLowerCase();
+  const shape = SHAPES[type];
+  const palette = PALETTES[skin] ?? PALETTES.ivory;
+  const c = palette[color];
+  const tag = `${skin}-${color}`;
+  const grad = `rc-fill-${tag}`;
+  const relief = `rc-relief-${tag}`;
   const parts = shape.parts.join('');
   const grooves = shape.grooves.map((d) => `<path d="${d}"/>`).join('');
   const dots = (shape.dots ?? []).map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('');
-  const mask = shape.mask ? shape.mask.replace('rc-slit', `rc-slit-${color}`) : '';
-  const fixMask = (s) => s.replace('url(#rc-slit)', `url(#rc-slit-${color})`);
+  const mask = shape.mask ? shape.mask.replace('rc-slit', `rc-slit-${tag}`) : '';
+  const fixMask = (s) => s.replace('url(#rc-slit)', `url(#rc-slit-${tag})`);
+  // Vân đá: vẽ các đường VEINS, cắt theo đúng hình quân (clipPath riêng cho từng loại quân).
+  const clip = `rc-clip-${tag}-${type}`;
+  const veins = c.veins
+    ? `<clipPath id="${clip}">${fixMask(parts)}</clipPath>`
+    : '';
+  const veinLayer = c.veins
+    ? `<g clip-path="url(#${clip})" fill="none" stroke="${c.veins}" stroke-width="1.6" stroke-linecap="round"><path d="${VEINS}"/></g>`
+    : '';
+  // Neon: viền sáng có quầng (bản sao viền làm mờ phía dưới).
+  const glowLayer = c.glow
+    ? `<g fill="none" stroke="${c.glow}" stroke-width="5" stroke-linejoin="round" opacity="0.55" filter="url(#rc-blur)">${fixMask(parts)}</g>`
+    : '';
 
   return `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <defs>
@@ -154,12 +192,16 @@ export function pieceSvg(piece) {
       <stop offset="0" stop-color="${c.top}"/><stop offset="1" stop-color="${c.bottom}"/>
     </linearGradient>
     ${reliefFilter(relief, c.shine)}
+    ${c.glow ? '<filter id="rc-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4"/></filter>' : ''}
     ${mask}
+    ${veins}
   </defs>
+  ${glowLayer}
   <g transform="translate(0 2.6)" fill="${c.depth}" stroke="${c.depth}" stroke-width="1.4" stroke-linejoin="round">${fixMask(parts)}</g>
-  <g fill="url(#${grad})" stroke="${c.edge}" stroke-width="1.3" stroke-linejoin="round">
+  <g fill="url(#${grad})" stroke="${c.edge}" stroke-width="${c.glow ? 2.2 : 1.3}" stroke-linejoin="round">
     ${fixMask(parts).replace(/<(path|rect|circle)/g, `<$1 filter="url(#${relief})"`)}
   </g>
+  ${veinLayer}
   <g fill="none" stroke-linecap="round" stroke-linejoin="round">
     <g transform="translate(0.6 0.8)" stroke="${c.grooveLight}" stroke-width="${shape.grooveWidth ?? 1.6}">${grooves}</g>
     <g stroke="${c.groove}" stroke-width="${shape.grooveWidth ?? 1.6}">${grooves}</g>

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // =============================================================================
-// tools/playtest.js — "Người chơi máy" chơi thử TOÀN BỘ level qua puzzle.js
+// tools/playtest.js — "Người chơi máy" chơi thử TOÀN BỘ level (cả 2 mode) qua puzzle.js
 // (đúng các hàm mà giao diện gọi), để tìm lỗi trước khi người thật chơi.
 //
-// Cách chạy:  node tools/playtest.js            (mọi level chính + Daily)
+// Cách chạy:  node tools/playtest.js            (mọi level chính, Daily, Obstacle, Blitz)
 //             node tools/playtest.js --rounds 5 (mỗi level chơi 5 ván, đối thủ ngẫu nhiên khác nhau)
 //
 // Với mỗi level, script chơi `rounds` ván. Mỗi ván:
@@ -121,7 +121,8 @@ export function playtestAll(data, rounds = 3) {
   let games = 0;
   let slowestMs = 0;
   let slowestLevel = null;
-  for (const level of [...data.levels, ...data.daily]) {
+  const modes = data.modes ?? {};
+  for (const level of [...data.levels, ...data.daily, ...(modes.obstacle ?? []), ...(modes.blitz ?? [])]) {
     for (let round = 0; round < rounds; round++) {
       try {
         const r = playRound(level, round, rng);

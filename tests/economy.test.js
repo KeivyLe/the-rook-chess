@@ -1,20 +1,20 @@
-// Test cho src/economy.js: coin, gợi ý, quảng cáo giả lập, cửa hàng giả lập.
+// Test cho src/economy.js: coin, giá gợi ý, rewarded giả lập theo kế hoạch MKT.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  createEconomy, solveReward, addSolveReward, canAffordHint, spendForHint, adsRemaining,
-  watchRewardedAd, onLevelWon, buyPack, START_COINS, HINT_COSTS, MAX_ADS_PER_DAY,
+  createEconomy, solveReward, addSolveReward, canAffordHint, spendForHint, hintCost,
+  canWatchHintAd, useHintAd, START_COINS, HINT_COSTS, HINT_ADS_PER_DAY,
 } from '../src/economy.js';
 
-test('người chơi mới có 100 coin, chưa mua Remove Ads', () => {
+test('người chơi mới có 100 coin, chưa dùng rewarded', () => {
   const e = createEconomy();
   assert.equal(e.coins, START_COINS);
   assert.equal(START_COINS, 100);
-  assert.equal(e.noAds, false);
+  assert.equal(e.hintAdsUsed, 0);
 });
 
-test('thưởng giải level theo bảng GDD 6.2', () => {
+test('thưởng giải level: lần đầu +10, hoàn hảo +5, Daily +20, giải lại 0', () => {
   assert.equal(solveReward({ firstTime: true }), 10);
   assert.equal(solveReward({ firstTime: true, perfect: true }), 15);
   assert.equal(solveReward({ firstTime: true, daily: true }), 20);
@@ -32,32 +32,33 @@ test('gợi ý 3 mức 20/40/100 coin; không đủ coin thì không trừ', () 
   assert.equal(canAffordHint(e, 3), false);
   assert.deepEqual(spendForHint(e, 3), { ok: false, cost: 100, coins: 60 });
   assert.equal(e.coins, 60);
-  assert.deepEqual(spendForHint(e, 1), { ok: true, cost: 20, coins: 40 });
   assert.throws(() => spendForHint(e, 4), /Mức gợi ý/);
 });
 
-test('quảng cáo thưởng: +25 coin, tối đa 5 lần mỗi ngày, sang ngày mới thì đếm lại', () => {
+test('Rook Pass: gợi ý miễn phí ở mọi mức', () => {
   const e = createEconomy();
-  assert.equal(adsRemaining(e, '20261112'), MAX_ADS_PER_DAY);
-  for (let i = 0; i < MAX_ADS_PER_DAY; i++) assert.equal(watchRewardedAd(e, '20261112').ok, true);
-  assert.equal(e.coins, 100 + 5 * 25);
-  assert.deepEqual(watchRewardedAd(e, '20261112'), { ok: false, gained: 0, remaining: 0 });
-  assert.equal(e.coins, 225);
-  assert.equal(adsRemaining(e, '20261113'), 5);
-  assert.deepEqual(watchRewardedAd(e, '20261113'), { ok: true, gained: 25, remaining: 4 });
+  e.coins = 0;
+  assert.equal(hintCost(3, true), 0);
+  assert.equal(canAffordHint(e, 3, true), true);
+  assert.deepEqual(spendForHint(e, 3, true), { ok: true, cost: 0, coins: 0 });
 });
 
-test('quảng cáo xen giữa: không hiện ở 10 level đầu, sau đó cứ 3 level một lần', () => {
+test('rewarded: chỉ khi sai ≥ 2 lần ở bài đang chơi, 1 lượt/ngày, không cho người có Pass', () => {
   const e = createEconomy();
-  const shown = [];
-  for (let id = 1; id <= 22; id++) if (onLevelWon(e, id)) shown.push(id);
-  assert.deepEqual(shown, [13, 16, 19, 22]);
+  const day = '20261205';
+  assert.equal(HINT_ADS_PER_DAY, 1);
+  assert.equal(canWatchHintAd(e, day, { wrongMoves: 0 }), false);
+  assert.equal(canWatchHintAd(e, day, { wrongMoves: 1 }), false);
+  assert.equal(canWatchHintAd(e, day, { wrongMoves: 2, hasPass: true }), false, 'người có Rook Pass không thấy rewarded');
+  assert.equal(canWatchHintAd(e, day, { wrongMoves: 2 }), true);
+  assert.deepEqual(useHintAd(e, day), { ok: true });
+  assert.equal(canWatchHintAd(e, day, { wrongMoves: 5 }), false, 'hết lượt hôm nay');
+  assert.deepEqual(useHintAd(e, day), { ok: false });
+  assert.equal(canWatchHintAd(e, '20261206', { wrongMoves: 2 }), true, 'sang ngày mới có lại 1 lượt');
 });
 
-test('Remove Ads tắt hẳn quảng cáo xen giữa; gói coin cộng coin', () => {
+test('rewarded không cộng coin (kế hoạch: không thưởng xu bằng quảng cáo)', () => {
   const e = createEconomy();
-  assert.deepEqual(buyPack(e, 'medium'), { ok: true, coins: 600, noAds: false });
-  buyPack(e, 'removeAds');
-  for (let id = 1; id <= 40; id++) assert.equal(onLevelWon(e, id), false);
-  assert.throws(() => buyPack(e, 'mega'), /Không có gói/);
+  useHintAd(e, '20261205');
+  assert.equal(e.coins, START_COINS);
 });

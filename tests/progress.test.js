@@ -37,11 +37,11 @@ test('không mở quá level cuối', () => {
 test('ghi có dùng gợi ý hay không, giữ kết quả tốt nhất khi giải lại', () => {
   const p = createProgress();
   markSolved(p, 1, { hintUsed: true });
-  assert.deepEqual(p.solved[1], { hintUsed: true });
-  markSolved(p, 1, { hintUsed: false });
-  assert.deepEqual(p.solved[1], { hintUsed: false });
+  assert.deepEqual(p.solved[1], { hintUsed: true, perfect: false });
+  markSolved(p, 1, { hintUsed: false, perfect: true });
+  assert.deepEqual(p.solved[1], { hintUsed: false, perfect: true });
   markSolved(p, 1, { hintUsed: true });
-  assert.deepEqual(p.solved[1], { hintUsed: false }, 'đã từng giải không gợi ý thì giữ nguyên');
+  assert.deepEqual(p.solved[1], { hintUsed: false, perfect: true }, 'đã từng giải không gợi ý / hoàn hảo thì giữ nguyên');
 });
 
 test('dateKey theo giờ địa phương; previousDateKey qua tháng, năm, năm nhuận', () => {

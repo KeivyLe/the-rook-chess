@@ -38,7 +38,7 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
 - **Kiểm chứng trước, giao diện sau.** Luật đi được kiểm bằng *perft* (đếm số chuỗi nước)
   trên 3 thế cờ 8×8 chuẩn, khớp con số đã công bố tới gần 100.000 nước. Nhờ vậy khi làm
   bộ giải và giao diện, mọi lỗi đều nằm ở phần mới chứ không phải ở luật cờ.
-- **Tách luật khỏi giao diện.** Mọi file logic chạy được bằng Node, nên 90 test chạy trong
+- **Tách luật khỏi giao diện.** Mọi file logic chạy được bằng Node, nên hơn 100 test chạy trong
   khoảng 10 giây mà không cần mở trình duyệt.
 
 ## 2. Những điểm người chơi bản gốc phàn nàn, và bản này đã sửa thế nào
@@ -47,10 +47,10 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
 |---|---|
 | Đi một nước đúng nhưng khác đáp án lưu sẵn thì bị báo sai | Không so với đáp án, và **không báo sai** gì cả: ván cứ tiếp tục, đối thủ vẫn đáp, chỉ chiếu hết thật mới thắng. Mọi cách chiếu hết đều được tính (có test riêng: level có hai cách chiếu hết ở nước cuối, cả hai đều thắng). Đi lệch tới khi ván dừng thì người chơi tự Undo, không giới hạn số lần. Đây là thay đổi so với GDD mục 3.4 (vốn đề xuất báo sai rồi tự lùi nước): người chơi tự nhận ra mình sai khi đối thủ thoát, giống chơi cờ thật hơn. |
 | Bấm gợi ý sau khi đã đi đúng nước đầu, game lùi về và gợi ý lại nước người chơi đã biết | Gợi ý luôn tính từ thế cờ **hiện tại** (có test riêng cho gợi ý giữa ván). |
-| Gợi ý quá đắt so với coin kiếm được, cảm giác bị ép mua | 3 mức gợi ý rõ giá: 20 / 40 / 100 coin. Người chơi trung bình kiếm 10–15 coin mỗi level, cộng 25 coin cho mỗi lần xem quảng cáo (tối đa 5 lần/ngày), nên cứ khoảng 2 level chơi tốt là đủ một gợi ý nhỏ. Bắt đầu với 100 coin. |
-| Quảng cáo quá dày, giữa các level khoảng mỗi 1–2 level | Không có quảng cáo ở 10 level đầu, sau đó cứ 3 level mới có một lần. Có gói "Remove Ads". Chơi thử tự động 60 level xác nhận đúng 16 quảng cáo, sau level 13, 16, …, 58. |
-| Nút đóng quảng cáo khó bấm, dễ bấm nhầm vào quảng cáo | Nút "Đóng" to, rộng hết hộp, đặt ở dưới cùng; hết 5 giây mới bấm được. |
-| Kiểu khuyến mãi gấp ("giảm 50% trong thời gian có hạn") | Không có khuyến mãi gấp, không đếm ngược ép mua. Cửa hàng chỉ có gói coin cố định và Remove Ads. |
+| Gợi ý quá đắt so với coin kiếm được, cảm giác bị ép mua | 3 mức gợi ý rõ giá: 20 / 40 / 100 coin, người chơi kiếm 10–15 coin mỗi level, bắt đầu với 100 coin. Bí quá (đã sai 2 lần ở một bài) thì được xem 1 quảng cáo đổi 1 gợi ý miễn phí mỗi ngày. Rook Pass cho gợi ý không giới hạn. |
+| Quảng cáo quá dày, giữa các level khoảng mỗi 1–2 level | Theo kế hoạch MKT: **không có** quảng cáo xen giữa level, không banner. Quảng cáo duy nhất là rewarded do người chơi tự bấm, tối đa 1 lần/ngày. Chơi thử tự động 60 level xác nhận 0 quảng cáo tự hiện. |
+| Nút đóng quảng cáo khó bấm, dễ bấm nhầm vào quảng cáo | Nút nhận thưởng to, rộng hết hộp, đặt ở dưới cùng; hết 5 giây mới bấm được. |
+| Kiểu khuyến mãi gấp ("giảm 50% trong thời gian có hạn") | Không giảm giá gấp, không đồng hồ đếm ngược. Ngoại lệ duy nhất theo kế hoạch MKT là Starter Bundle chỉ bán 7 ngày đầu sau khi cài: game mời đúng 2 lần (sau Daily đầu tiên và sau level 10), bấm "Để sau" là thôi, vẫn mua được trong Shop tới hết hạn. |
 | Quảng cáo làm tắt nhạc của app khác | Không có nhạc nền; âm thanh hiệu ứng tổng hợp bằng Web Audio và tắt được trong Cài đặt. |
 | Bị kẹt ở level khó, độ khó tăng đột ngột | Chương 1–4 tăng dần số nước; trong mỗi chương level được chấm điểm khó tự động rồi xếp **răng cưa**: cứ 3 level thì chèn 1 level dễ để nghỉ. 5 level đầu giới thiệu từng quân. |
 | Puzzle bị lỗi (ví dụ "puzzle bị hòa pat") | Mọi level qua kiểm tra tự động: thế cờ hợp lệ, chiếu hết **đúng** N nước, không có cách chiếu hết sớm hơn, nước đầu duy nhất. Gây hòa pat thì ván dừng với tiêu đề "Hoà pat" và nhắc bấm Undo. |
@@ -66,6 +66,14 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
   thiết kế (quân dẹt khắc nổi, hai màu ngà và nâu cà phê), dựng lại bằng SVG trong code;
   icon tự vẽ, màu nền tự chọn, âm thanh tổng hợp bằng code. Bố cục màn chơi thì theo bản gốc.
 - **Quảng cáo và thanh toán chỉ là giả lập**, không có SDK thật.
+- **Kiếm tiền theo "Kế hoạch MKT The Rook Chess"** (thay GDD mục 6): Rook Pass, Starter
+  Bundle, skin, mode bán thêm; không quảng cáo xen giữa, không bán coin, không "Remove Ads".
+  Save cũ (có quảng cáo) được tự chuyển sang dạng mới, giữ nguyên tiến trình và coin.
+- **Tính năng tăng trưởng theo kế hoạch MKT đã làm:** mode Obstacle (vật cản trên bàn —
+  dùng lại ô "lỗ" có sẵn), Blitz Mate (đua giờ, kỷ lục tuần), Trophy Đồng/Bạc/Vàng/Bạch kim,
+  skin Cẩm thạch / Neon / Hoàng gia. **Chưa làm** (cần máy chủ hoặc app di động): bảng xếp
+  hạng bạn bè và tuần, "% người chơi đạt" Trophy, link mời bạn, mode Classic Masters
+  (cần soạn thế cờ lịch sử và kiểm tra bản quyền), thẻ chia sẻ Daily Mate.
 - **Quy mô:** 60 level chính + 30 Daily, so với khoảng 1010 level của bản gốc. Daily xoay
   vòng 30 level theo ngày, có chuỗi ngày liên tiếp (streak), thay cho các event theo đợt.
 
@@ -73,15 +81,16 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
 
 **Đã kiểm thử:**
 
-- 94 test tự động (`npm test`): luật cờ, perft, bộ giải, 3 thế cờ chép từ ảnh bản gốc,
-  từng level trong `levels.json`, máy trạng thái màn chơi, kinh tế, tiến trình, lưu game.
-- `npm run playtest`: máy chơi 90 level × 3 ván, đối thủ chọn ngẫu nhiên giữa các nước
+- 113 test tự động (`npm test`): luật cờ, perft, bộ giải, 3 thế cờ chép từ ảnh bản gốc,
+  từng level trong `levels.json` (cả 2 mode), máy trạng thái màn chơi, kinh tế, cửa hàng,
+  mode, Trophy, tiến trình, lưu game (kể cả chuyển save cũ).
+- `npm run playtest`: máy chơi 150 bài (level chính, Daily, Obstacle, Blitz) × 3 ván, đối thủ chọn ngẫu nhiên giữa các nước
   phòng thủ tốt nhất, thử cả đi lệch (ván phải tiếp tục rồi dừng mà không thắng, Undo về
-  đầu phải như mới), Undo, gợi ý mức 3. Kết quả 270/270 ván thắng đúng hạn, 0 lỗi. Lượt
-  chậm nhất của bộ giải là khoảng 0,8 giây (level 60, mate in 4).
+  đầu phải như mới), Undo, gợi ý mức 3. Kết quả 450/450 ván thắng đúng hạn, 0 lỗi. Lượt
+  chậm nhất của bộ giải là khoảng 0,9 giây (level 60, mate in 4).
 - `npm run playtest:browser`: chơi 60 level liên tục qua giao diện thật trên Chromium, bấm
-  chuột như người thật, rồi chơi Daily. 0 lỗi JavaScript; coin, tiến trình, streak và lịch
-  quảng cáo lưu đúng như thiết kế.
+  chuột như người thật, rồi chơi Daily. 0 lỗi JavaScript; coin, tiến trình, streak, Trophy
+  lưu đúng; 0 quảng cáo tự hiện; hộp Starter Bundle hiện đúng 2 lần.
 
 **Còn thiếu / nên làm tiếp:**
 

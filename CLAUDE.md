@@ -27,7 +27,8 @@ phòng thủ tốt nhất.
 | 5 | Kinh tế: `economy.js` (coin, gợi ý 3 mức, quảng cáo/Shop giả lập) | **Logic xong**; còn màn Ad, Shop |
 | 5b | Giao diện: `index.html`, `css/style.css`, `src/ui/` (chủ dự án gọi là "Mốc 5") | **Xong**: màn chơi, chọn level, Daily, Shop, Settings, gợi ý, phong cấp, thắng, Ad |
 | 6 | Chơi thử tự động 60 level (Node + trình duyệt), README, `docs/so-sanh.md`, chuẩn bị GitHub Pages | **Xong** |
-| Sau | Kéo thả quân, nút "Xem lại", bộ giải sang Web Worker, chơi thử với người thật | Chưa |
+| 7 | Tính năng theo "Kế hoạch MKT" (artifact JXJmmH9thE6gjnq1iHES56, tab Tính năng + Kiếm tiền): kinh tế mới, Rook Pass, Starter Bundle, skin, mode Obstacle + Blitz Mate, Trophy | **Xong** |
+| Sau | Kéo thả quân, nút "Xem lại", bộ giải sang Web Worker, chơi thử với người thật; từ kế hoạch MKT (cần máy chủ / app): Bạn cờ, bảng xếp hạng, % đạt Trophy, Classic Masters, thẻ chia sẻ Daily Mate | Chưa |
 
 ## Cấu trúc thư mục
 
@@ -45,9 +46,12 @@ src/
   movegen.js       # sinh nước hợp lệ, inCheck, isCheckmate, isStalemate, perft
   solver.js        # alpha-beta + bảng băm: findMate, isStillWinning, bestDefense, bestHint
   puzzle.js        # máy trạng thái 1 level: chấm đúng/sai, đối thủ đáp, undo, restart, gợi ý
-  economy.js       # coin, giá gợi ý, quảng cáo thưởng/xen giữa giả lập, Shop giả lập
-  progress.js      # mở khoá level, Daily theo ngày, streak, ngày dạng "yyyymmdd"
-  storage.js       # save data { version, progress, economy, settings } ↔ localStorage
+  economy.js       # coin, giá gợi ý (Pass = miễn phí), rewarded 1 lần/ngày khi sai ≥ 2 lần
+  store.js         # cửa hàng giả lập: Rook Pass, Starter Bundle, skin, mode, quyền chơi thử 5 bài
+  modes.js         # tiến trình Obstacle, kỷ lục Blitz (cá nhân + tuần), blitzQueue
+  trophies.js      # Trophy Đồng/Bạc/Vàng/Bạch kim: TROPHIES, collectStats, evaluateTrophies
+  progress.js      # mở khoá level, Daily, streak, ngày "yyyymmdd", daysBetween/addDays/weekKey
+  storage.js       # save v2 { version, progress, economy, store, modes, trophies, settings } ↔ localStorage
   ui/              # CHỈ thư mục này được dùng DOM
     main.js        # fetch levels.json → startApp
     app.js         # các màn hình + nối logic với hình ảnh (luồng chơi, gợi ý, thắng, Ad, Shop, Settings)
@@ -62,7 +66,10 @@ tests/
   solver.test.js   # 3 thế cờ chép từ ảnh game gốc + chấm nước, đáp trả, gợi ý
   levels.test.js   # chạy verify-levels trên levels.json + test bộ kiểm tra bắt được lỗi
   puzzle.test.js   # trạng thái, pat, cách giải khác, undo, gợi ý, chơi hết level thật bằng gợi ý
-  economy.test.js  # thưởng, giá gợi ý, 5 quảng cáo/ngày, quảng cáo xen giữa, Shop
+  economy.test.js  # thưởng, giá gợi ý, Pass miễn phí gợi ý, rewarded 1/ngày khi sai ≥ 2
+  store.test.js    # Pass dùng thử/đăng ký, Starter 7 ngày, mua skin/bộ/mode, trang bị, chơi thử 5 bài
+  modes.test.js    # Obstacle, kỷ lục Blitz theo tuần, weekKey, blitzQueue
+  trophies.test.js # điều kiện đạt, Bạch kim, collectStats
   progress.test.js # mở khoá, dateKey/previousDateKey, Daily xoay vòng, streak
   storage.test.js  # localStorage giả, JSON hỏng, bị chặn, save cũ thiếu trường
 tools/
@@ -136,6 +143,11 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
 - **Tiêu chuẩn puzzle** (`tools/level-check.js`): mỗi bên 1 Vua, không bên nào
   đang bị chiếu, Tốt không ở hàng đầu/cuối; chiếu hết ĐÚNG N nước (không sớm
   hơn); nước đầu duy nhất. Sau khi lọc còn bước rút gọn: bỏ mọi quân thừa.
+- **levels.json v2:** `{ version: 2, seed, chapters, levels, daily, modes: { obstacle, blitz } }`.
+  Mode Obstacle: 20 bài (6/8/6 mate in 1/2/3), id `obstacle-01`…, `obstacles: true`, vật cản
+  là ô `'x'` BÊN TRONG bàn và phải có tác dụng (`obstaclesMatter`: bỏ vật cản thì lời giải
+  khác / không còn là puzzle). Mode Blitz: 40 bài (28 mate in 1 + 12 mate in 2), id `blitz-01`….
+  Hai mode được sinh SAU level chính và Daily nên không làm đổi chúng (cùng seed).
 - **Định dạng một level:** `{ id, chapter, width, height, fen, mateIn, attacker, solution, difficulty }`.
   `fen` dạng gọn `"rows w"`; `solution` là biến chính đủ `2N-1` ply (bên phòng
   thủ đáp tốt nhất, hòa điểm lấy nước đầu); game thật chấm bằng `isStillWinning`
@@ -144,7 +156,7 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   R, Q, N, B, P (Trắng đi, chỉ 1 quân tấn công, level Tốt giải bằng phong cấp).
   Trong chương: chọn trải đều theo `difficulty`, xếp tăng dần kiểu răng cưa
   (cứ 3 level chèn 1 level dễ). Daily: 8/14/8 level mate in 1/2/3.
-- **Sinh lại:** `npm run levels:generate` (seed mặc định 20261112, khoảng 100 giây,
+- **Sinh lại:** `npm run levels:generate` (seed mặc định 20261112, khoảng 3 phút,
   cùng seed ra cùng file), rồi `npm run levels:verify`. Đổi tiêu chuẩn trong
   `level-check.js` thì phải sinh lại và chạy test.
 
@@ -167,19 +179,34 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
 - **Gợi ý:** `getHint(p, 1|2|3)` → `{from}` / `{from,to,move}` / `{line}`, tính từ thế
   hiện tại; đã lệch thì trả `{offTrack: true}` và không tính lượt. Trừ coin KHÔNG nằm
   trong puzzle: giao diện kiểm `canHint` rồi gọi `spendForHint` trước.
-- **Các file độc lập:** economy/progress không import lẫn nhau; giao diện ghép lại.
-  Khi thắng level chính: `s = summary(p)` → `markSolved(progress, id, {hintUsed: s.hintUsed, totalLevels})`
-  → `addSolveReward(economy, {firstTime, perfect: s.perfect})` → `onLevelWon(economy, id)`
-  (true thì hiện Ad) → `writeSave(save)`. Daily: `completeDaily(progress, today)`
-  → `addSolveReward(economy, {firstTime, perfect, daily: true})`.
-- **Số liệu kinh tế** là hằng số đầu `economy.js` (GDD 6.2): khởi đầu 100, giải lần đầu
-  +10, perfect +5, Daily +20, quảng cáo +25 (5 lần/ngày), gợi ý 20/40/100, giải lại 0.
-  Quảng cáo xen giữa: không ở level 1–10, sau đó cứ 3 level thắng thì hiện 1 lần.
+- **Các file độc lập:** economy/progress/modes/trophies không import lẫn nhau (store và
+  modes chỉ dùng hàm ngày của progress); giao diện ghép lại.
+  Khi thắng level chính: `s = summary(p)` → `markSolved(progress, id, {hintUsed, perfect, totalLevels})`
+  → `addSolveReward(economy, {firstTime, perfect: s.perfect})` → `writeSave(save)` →
+  `evaluateTrophies(trophies, collectStats(save, data), today)`. Daily: `completeDaily`
+  → `addSolveReward(..., daily: true)`. Obstacle: `markObstacleSolved` → `addSolveReward`.
+  Blitz: mỗi thế +1 điểm, hết giờ `recordBlitz(modes, score, today)`.
+- **Kiếm tiền theo "Kế hoạch MKT"** (thay GDD 6; chủ dự án chọn): KHÔNG quảng cáo xen giữa,
+  không banner, không thưởng coin bằng quảng cáo, không bán coin, không "Remove Ads".
+  Coin: khởi đầu 100, giải lần đầu +10, perfect +5, Daily +20, giải lại 0; gợi ý 20/40/100.
+  Rewarded: tối đa 1 lần/ngày, chỉ khi `puzzle.wrongMoves ≥ 2` ở bài đang chơi và không có
+  Pass, đổi lấy 1 gợi ý mức 2 (`canWatchHintAd`, `useHintAd`).
+- **Cửa hàng giả lập (`store.js`):** Rook Pass $4.99/tháng (dùng thử 7 ngày một lần, mỗi
+  kỳ 30 ngày) = mọi mode + gợi ý miễn phí + skin quân độc quyền "royal" + không rewarded.
+  Starter Bundle $9.99 chỉ trong 7 ngày đầu kể từ `installDate` = mode Obstacle + bàn và quân
+  Cẩm thạch; giao diện mời đúng 2 lần (sau Daily đầu tiên, sau level 10). Skin $2.99, bộ
+  $4.99, mode $3.99. Mỗi mode chơi thử `FREE_MODE_LEVELS` = 5 bài (Blitz: 5 thế mỗi lượt).
+  Skin: bàn `classic | marble | neon`, quân `ivory | marble | neon | royal`;
+  `activeSkins` tự về mặc định khi skin độc quyền hết Pass. Xem thử skin chưa mua: chỉ trong Daily.
+- **Trophy:** 13 trophy (5 Đồng, 4 Bạc, 4 Vàng) + Bạch kim khi có đủ. Không bán, không
+  thưởng coin. "% người đạt" cần máy chủ, chưa làm.
 - **Daily:** `dailyIndex(today, daily.length)` = số ngày từ 1970 chia dư số level,
   nên 30 ngày liên tiếp đi qua đủ 30 level. Streak giữ tới hết ngày hôm sau.
 - **Save data:** `loadSave()` không bao giờ ném lỗi, trả `{save, status}`
   (`'loaded' | 'new' | 'corrupt' | 'unavailable'`); thiếu trường thì lấy mặc định.
-  Đổi cấu trúc save thì tăng `SAVE_VERSION` và viết bước chuyển đổi.
+  Đổi cấu trúc save thì tăng `SAVE_VERSION` và viết bước chuyển đổi trong `migrateSave`.
+  Hiện là v2; v1 → v2 bỏ các trường quảng cáo cũ, giữ nguyên tiến trình và coin.
+  `store.installDate` do giao diện ghi lần đầu mở game (`ensureInstallDate`).
 
 ## Giao diện (src/ui/)
 
@@ -215,7 +242,15 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   `ended`: tiêu đề đổi thành "Hết nước" / "Hoà pat" / "Bị chiếu hết", toast nhắc Undo,
   vòng sáng quanh nút Undo (`.attention::after`, nút đứng yên để dễ bấm).
   Màn hình luôn vẽ lại từ dữ liệu sau animation (`drawBoard`), không giữ trạng thái riêng.
-- **Màu nền** theo level xoay vòng 8 màu (`themes.js`), Daily luôn xanh biển.
+- **Màn hình mode** (app.js): `app.mode` ∈ `main | daily | obstacle | blitz`. Obstacle:
+  board-view `setStyle({obstacles: true})` vẽ ô `'x'` thành khối đá. Blitz: đồng hồ
+  `BLITZ_SECONDS` = 180 giây trên dòng subtitle, nút gợi ý thành nút "Bỏ qua", ván dừng
+  (ENDED) thì tự sang thế khác, không có gợi ý. Màn chọn level có 2 hàng nút: Daily / Shop /
+  Cài đặt và Obstacle / Blitz / Trophy. Trophy mới đạt hiện thông báo `.trophy-toast`.
+- **Skin bàn** đặt bằng `data-skin` trên `.board` (và mẫu `.skin-swatch` trong Shop), CSS
+  `[data-skin="marble"]`, `[data-skin="neon"]` đổi biến `--sq-*`; skin quân truyền vào
+  `pieceSvg(piece, skin)`. Pháo giấy lấy màu `SKIN_CONFETTI[skin quân]`.
+- **Màu nền** theo level xoay vòng 8 màu (`themes.js`), Daily luôn xanh biển, Blitz đỏ cam.
 - **Âm thanh** tạo AudioContext ở lần phát đầu (sau cú chạm); tắt bằng Settings.
 
 ## Kiểm thử và phát hành
@@ -224,8 +259,9 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   `npm run playtest:browser` (~4,5 phút, cần Playwright) chạy khi sửa puzzle.js, solver
   hoặc giao diện; không nằm trong `npm test` vì chậm.
 - playtest-browser tự bật server cổng 8123, xoá localStorage, chơi 1 → 60 bằng
-  bestHint, rồi kiểm tra save: 60 level, coin = 100 + 60·15 + 25, streak 1, quảng cáo
-  sau level 13, 16, …, 58. Đổi số liệu kinh tế thì sửa con số mong đợi trong script.
+  bestHint, rồi kiểm tra save: 60 level, coin = 100 + 60·15 + 25, streak 1, 0 quảng cáo
+  tự hiện, hộp Starter Bundle đúng 2 lần (sau level 10 và Daily), có các Trophy chương.
+  Đổi số liệu kinh tế thì sửa con số mong đợi trong script.
 - **GitHub Pages:** trang tĩnh, không build. Settings → Pages → Deploy from a branch →
   `main` / root. Mọi đường dẫn trong game phải là **tương đối** (`levels.json`,
   `css/style.css`) vì site nằm dưới `/the-rook-chess/`. Repo private cần gói GitHub trả phí
@@ -247,11 +283,11 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
 ```bash
 npm start                # server tĩnh, mở http://localhost:8080
 npm test                 # = node --test, chạy mọi file tests/*.test.js
-npm run levels:generate  # sinh lại levels.json (khoảng 100 giây)
+npm run levels:generate  # sinh lại levels.json (khoảng 3 phút)
 npm run levels:verify    # kiểm tra levels.json (khoảng 8 giây)
-npm run playtest         # chơi thử tự động 90 level × 3 ván (khoảng 30 giây)
+npm run playtest         # chơi thử tự động 150 bài × 3 ván (khoảng 40 giây)
 npm run playtest:browser # chơi 60 level qua giao diện thật (khoảng 4,5 phút, cần Playwright)
 ```
 
-Test hiện có 94 ca, chạy khoảng 9 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
+Test hiện có 113 ca, chạy khoảng 13 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
 là bằng chứng mạnh nhất rằng movegen + make/undo đúng; đừng xoá.

@@ -21,6 +21,8 @@ export const THEMES = [
 
 /** Màu riêng cho Daily Puzzle. */
 export const DAILY_THEME = { name: 'xanh biển', hsl: [210, 32, 44] };
+/** Màu riêng cho mode Blitz Mate (đỏ cam, cảm giác "đua giờ"). */
+export const BLITZ_THEME = { name: 'than hồng', hsl: [12, 42, 38] };
 
 /** Màu nền cho level chính `id` (id bắt đầu từ 1). */
 export function themeForLevel(id) {
