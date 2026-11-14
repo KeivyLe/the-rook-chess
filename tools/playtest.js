@@ -7,8 +7,9 @@
 //             node tools/playtest.js --rounds 5 (mỗi level chơi 5 ván, đối thủ ngẫu nhiên khác nhau)
 //
 // Với mỗi level, script chơi `rounds` ván. Mỗi ván:
-//   1. Thử một nước SAI ở đầu ván (nếu có): phải bị chấm "wrong", retry() phải
-//      trả bàn về đúng như cũ.
+//   1. Thử một nước SAI ở đầu ván (nếu có). Theo luật "đi sai thì kệ": nước đó
+//      KHÔNG bị báo sai, ván chơi tiếp tới khi dừng (hết nước / pat / bị chiếu
+//      hết ngược) mà không thắng; rồi Undo hết về đầu, bàn phải y như cũ.
 //   2. Đi theo gợi ý mức 2 (bestHint), đối thủ đáp bằng bestDefense với số
 //      ngẫu nhiên khác nhau mỗi ván (để đi qua nhiều nhánh phòng thủ).
 //   3. Giữa chừng thử Undo rồi đi lại.
@@ -25,8 +26,8 @@ import { toFen, moveToString, make, undo } from '../src/board.js';
 import { legalMoves } from '../src/movegen.js';
 import { isStillWinning } from '../src/solver.js';
 import {
-  createPuzzle, playerMove, retry, opponentMove, undoMove, getHint, summary,
-  PLAYER_TURN, OPPONENT_TURN, WON,
+  createPuzzle, playerMove, opponentMove, undoMove, getHint, summary,
+  PLAYER_TURN, OPPONENT_TURN, ENDED, WON,
 } from '../src/puzzle.js';
 import { createRng } from './generate-levels.js';
 
@@ -68,12 +69,23 @@ function playRound(level, round, rng) {
     const wrong = findWrongMove(p);
     if (wrong) {
       const r = timed(() => playerMove(p, wrong));
-      if (r.result !== 'wrong') fail(`nước sai ${wrong} lại bị chấm "${r.result}"`);
-      else {
-        retry(p);
-        if (toFen(p.board) !== startFen) fail('retry() không trả bàn về như cũ');
-        if (p.movesLeft !== level.mateIn) fail('đi sai mà bị trừ nước');
+      if (r.result === 'win') fail(`nước sai ${wrong} lại thắng`);
+      // Chơi tiếp bằng nước hợp lệ đầu tiên cho tới khi ván dừng: không được thắng.
+      for (let guard = 0; guard < 20 && p.state !== ENDED && p.state !== WON; guard++) {
+        if (p.state === OPPONENT_TURN) timed(() => opponentMove(p));
+        else if (p.state === PLAYER_TURN) {
+          const m = legalMoves(p.board)[0];
+          if (!m) { fail('lượt người chơi mà không có nước nào'); break; }
+          playerMove(p, moveToString(p.board, m));
+        }
       }
+      // Đã lệch thì đối thủ (bestDefense) luôn tránh được chiếu hết, nên không thể thắng.
+      if (p.state !== ENDED) fail(`ván sau nước sai không dừng ở ENDED (trạng thái ${p.state})`);
+      if (p.wrongMoves < 1) fail('nước sai không được ghi vào wrongMoves');
+      // Undo hết về đầu level.
+      while (p.state !== WON && undoMove(p)) { /* lùi tới khi hết */ }
+      if (toFen(p.board) !== startFen) fail('Undo về đầu không trả bàn như cũ');
+      if (p.movesLeft !== level.mateIn || !p.onTrack || p.state !== PLAYER_TURN) fail('Undo về đầu nhưng trạng thái chưa như mới');
     }
     // Gợi ý mức 3: lời giải phải đủ 2·N − 1 ply.
     const full = getHint(p, 3).line;
@@ -86,7 +98,7 @@ function playRound(level, round, rng) {
     if (p.state !== PLAYER_TURN) { fail(`trạng thái lạ ${p.state}`); break; }
     const hint = timed(() => getHint(p, 2));
     const r = timed(() => playerMove(p, hint.move));
-    if (r.result !== 'correct' && r.result !== 'win') { fail(`gợi ý ${hint.move} bị chấm "${r.result}"`); break; }
+    if (r.result !== 'win' && !(r.result === 'continue' && r.onTrack)) { fail(`gợi ý ${hint.move} cho kết quả "${r.result}"`); break; }
     if (p.state === OPPONENT_TURN) timed(() => opponentMove(p));
     if (!undone && p.state === PLAYER_TURN && p.moves.length >= 2) {
       undone = true;

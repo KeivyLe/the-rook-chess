@@ -19,11 +19,14 @@ link là `https://keivyle.github.io/the-rook-chess/`.
    Số N giảm dần sau mỗi nước đúng, và đổi màu khi chỉ còn 1 nước.
 2. **Chạm một quân** của bạn: các ô đi được hiện chấm tròn, ô ăn được hiện vòng tròn.
    **Chạm ô đích** để đi. Chạm lại quân đang chọn hoặc ô trống để bỏ chọn.
-3. Đi **đúng** (vẫn còn chiếu hết được): đối thủ tự đáp trả. Đi **sai** (đối thủ thoát
-   được, hoặc gây hòa pat): bàn rung, quân tự lùi về; thử lại thoải mái, không bị phạt.
+3. Đi xong thì đối thủ tự đáp trả. Game **không báo đúng/sai**: đi lệch thì ván cứ tiếp
+   tục, chỉ khi bạn thật sự chiếu hết mới có hiệu ứng chiến thắng. Nếu đi hết N nước mà
+   chưa chiếu hết (hoặc gây hòa pat, hoặc bị đối thủ chiếu hết ngược), ván dừng lại và
+   nút **Undo** sáng lên: bấm Undo để đi lại, bao nhiêu lần cũng được, tới khi thắng.
 4. Tốt tới hàng cuối thì chọn phong Hậu, Xe, Tượng hoặc Mã (có level phải phong Mã!).
 5. Bí thì bấm **bóng đèn** để mua gợi ý bằng coin, hoặc **Undo** để đi lại.
-6. Thắng level đầu tiên được coin; không dùng gợi ý, không đi sai được thêm coin.
+6. Thắng level đầu tiên được coin; không dùng gợi ý và chưa từng đi lệch thì được thêm coin.
+   Đã đi lệch thì gợi ý không dùng được (không còn nước đúng để gợi ý): hãy Undo trước.
 
 | | Coin |
 |---|---|
@@ -57,7 +60,7 @@ Rồi mở http://localhost:8080. Điện thoại cùng mạng wifi mở `http:/
 | `npm test` | Chạy toàn bộ test (khoảng 10 giây) |
 | `npm run levels:verify` | Kiểm tra lại mọi level trong `levels.json` bằng bộ giải |
 | `npm run levels:generate` | Sinh lại `levels.json` (khoảng 100 giây; cùng seed ra cùng file) |
-| `npm run playtest` | "Người chơi máy" chơi hết 90 level × 3 ván, thử cả nước sai và Undo |
+| `npm run playtest` | "Người chơi máy" chơi hết 90 level × 3 ván, thử cả đi lệch tới khi ván dừng rồi Undo |
 | `npm run playtest:browser` | Chơi 60 level qua giao diện thật trên Chromium (cần Playwright) |
 
 ## Cấu trúc code

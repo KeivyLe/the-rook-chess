@@ -150,14 +150,23 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
 
 ## Logic game (puzzle / economy / progress / storage)
 
-- **Máy trạng thái `puzzle.js`:** `PLAYER_TURN` → `playerMove()` →
-  `WON` | `WRONG_MOVE` (bàn vẫn hiện nước sai; giao diện rung rồi gọi `retry()`)
-  | `OPPONENT_TURN` (giao diện chờ ~400 ms rồi gọi `opponentMove()`).
-  `ANIMATING` là việc của giao diện. Gọi sai trạng thái thì ném lỗi.
-- **Chấm đúng/sai:** bằng `isStillWinning`, không so đáp án; hòa pat là sai
-  (`reason: 'stalemate'`), mất chiếu hết là sai (`'no-mate'`). Sai không trừ nước.
+- **Luật "đi sai thì kệ"** (yêu cầu của chủ dự án, thay GDD 3.4): KHÔNG báo sai, không
+  rung, không tự lùi nước. Ván tiếp tục, đối thủ vẫn đáp; chỉ chiếu hết thật mới thắng.
+  Người chơi tự Undo, không giới hạn, tới khi thắng.
+- **Máy trạng thái `puzzle.js`:** `PLAYER_TURN` → `playerMove()` → `WON` | `ENDED`
+  | `OPPONENT_TURN` (giao diện chờ ~400 ms rồi gọi `opponentMove()` → `PLAYER_TURN`
+  hoặc `ENDED`). `ENDED` = ván không đi tiếp được mà chưa thắng, `endReason` ∈
+  `'out-of-moves'` (đi đủ N nước), `'stalemate'`, `'lost'` (bị chiếu hết ngược).
+  `undoMove()` dùng được ở `PLAYER_TURN` và `ENDED` (`canUndo()`), lùi nước đáp của
+  đối thủ (nếu có) cùng nước của mình. `ANIMATING` là việc của giao diện. Gọi sai
+  trạng thái thì ném lỗi. `playerMove` trả `result` ∈ `illegal | win | ended | continue`.
+- **onTrack:** sau mỗi nước, `isStillWinning` vẫn chạy ngầm để biết còn chiếu hết bắt
+  buộc không; KHÔNG đổi luồng chơi, chỉ dùng để đếm `wrongMoves` (mất thưởng perfect)
+  và chặn gợi ý (`canHint()`); `trackHistory` giúp Undo trả lại giá trị cũ. Đã lệch thì
+  `bestDefense` luôn tránh được chiếu hết, nên không thể thắng nếu không Undo.
 - **Gợi ý:** `getHint(p, 1|2|3)` → `{from}` / `{from,to,move}` / `{line}`, tính từ thế
-  hiện tại. Trừ coin KHÔNG nằm trong puzzle: giao diện gọi `spendForHint` trước.
+  hiện tại; đã lệch thì trả `{offTrack: true}` và không tính lượt. Trừ coin KHÔNG nằm
+  trong puzzle: giao diện kiểm `canHint` rồi gọi `spendForHint` trước.
 - **Các file độc lập:** economy/progress không import lẫn nhau; giao diện ghép lại.
   Khi thắng level chính: `s = summary(p)` → `markSolved(progress, id, {hintUsed: s.hintUsed, totalLevels})`
   → `addSolveReward(economy, {firstTime, perfect: s.perfect})` → `onLevelWon(economy, id)`
@@ -198,8 +207,10 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   ô, rộng 71,7% (giữ tỉ lệ 100×120), căn giữa; nhấc quân khi chọn chỉ
   `translateY(-4%) scale(1.04)`. Đổi dáng quân to hơn thì đo lại bằng getBBox.
 - **Luồng một nước:** `busy = true` (chính là trạng thái ANIMATING) → trượt quân →
-  `playerMove` → sai: rung + toast + `retry` + trượt về; đúng: chờ 400 ms →
-  `opponentMove` → trượt quân đối thủ; thắng: Vua đổ + pháo giấy + hộp thắng.
+  `playerMove` → `continue`: chờ 400 ms → `opponentMove` → trượt quân đối thủ;
+  `win`: Vua đổ + pháo giấy + hộp thắng (CHỈ lúc này mới có hiệu ứng thắng);
+  `ended`: tiêu đề đổi thành "Hết nước" / "Hoà pat" / "Bị chiếu hết", toast nhắc Undo,
+  vòng sáng quanh nút Undo (`.attention::after`, nút đứng yên để dễ bấm).
   Màn hình luôn vẽ lại từ dữ liệu sau animation (`drawBoard`), không giữ trạng thái riêng.
 - **Màu nền** theo level xoay vòng 8 màu (`themes.js`), Daily luôn xanh biển.
 - **Âm thanh** tạo AudioContext ở lần phát đầu (sau cú chạm); tắt bằng Settings.
@@ -239,5 +250,5 @@ npm run playtest         # chơi thử tự động 90 level × 3 ván (khoảng
 npm run playtest:browser # chơi 60 level qua giao diện thật (khoảng 4,5 phút, cần Playwright)
 ```
 
-Test hiện có 90 ca, chạy khoảng 9 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
+Test hiện có 94 ca, chạy khoảng 9 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
 là bằng chứng mạnh nhất rằng movegen + make/undo đúng; đừng xoá.

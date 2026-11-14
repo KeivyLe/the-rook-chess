@@ -20,8 +20,8 @@ import { themeForLevel, DAILY_THEME, applyTheme } from './themes.js';
 import { parseSquare, squareName, colorOf, opponent } from '../board.js';
 import { inCheck, findKing } from '../movegen.js';
 import {
-  createPuzzle, playerMove, retry, opponentMove, undoMove, getHint, legalTargets,
-  needsPromotion, summary, PLAYER_TURN, WON,
+  createPuzzle, playerMove, opponentMove, undoMove, getHint, legalTargets,
+  needsPromotion, summary, canUndo, canHint, PLAYER_TURN, ENDED, WON,
 } from '../puzzle.js';
 import {
   HINT_COSTS, REWARD_AD, spendForHint, addSolveReward, onLevelWon, watchRewardedAd,
@@ -32,6 +32,17 @@ import {
   isDailySolved, currentStreak,
 } from '../progress.js';
 import { loadSave, writeSave, resetSave } from '../storage.js';
+
+/**
+ * Khi ván dừng mà chưa thắng (puzzle ENDED): chữ thay cho "Mate in N" ở tiêu đề
+ * và thông báo ngắn. Theo luật của bản này, đi sai thì không báo sai; chỉ khi
+ * ván KHÔNG THỂ đi tiếp mới nhắc người chơi bấm Undo.
+ */
+const END_TEXT = {
+  'out-of-moves': { title: 'Hết nước', toast: 'Chưa chiếu hết. Bấm Undo để thử lại' },
+  stalemate: { title: 'Hoà pat', toast: 'Hoà pat! Bấm Undo để thử lại' },
+  lost: { title: 'Bị chiếu hết', toast: 'Đối thủ chiếu hết bạn! Bấm Undo để thử lại' },
+};
 
 /** Thời gian chờ trước khi đối thủ đáp trả, để người chơi kịp nhìn (GDD 7.2). */
 const OPPONENT_DELAY = 400;
@@ -215,15 +226,23 @@ export function startApp(root, data) {
       hintTo: app.hint?.to,
       checkSq,
     });
-    // "Mate in N": N là số nước còn lại; còn 1 nước (ở level nhiều nước) thì đổi màu.
-    // Đã thắng thì giữ nguyên đề bài ban đầu (không hiện "Mate in 0").
-    const n = document.querySelector('.moves-left');
-    if (n) {
-      n.textContent = String(p.state === WON ? p.level.mateIn : p.movesLeft);
-      n.classList.toggle('urgent', p.movesLeft <= 1 && p.level.mateIn > 1 && p.state !== WON);
+    // Tiêu đề: "Mate in N" với N là số nước còn lại (còn 1 nước ở level nhiều nước
+    // thì đổi màu); đã thắng thì giữ đề bài ban đầu; ván dừng thì ghi lý do.
+    const title = document.querySelector('.game-screen .title');
+    if (title) {
+      if (p.state === ENDED) {
+        title.replaceChildren(END_TEXT[p.endReason].title);
+        title.classList.add('ended');
+      } else {
+        const n = h('span', { class: 'moves-left' }, String(p.state === WON ? p.level.mateIn : p.movesLeft));
+        n.classList.toggle('urgent', p.movesLeft <= 1 && p.level.mateIn > 1 && p.state !== WON);
+        title.replaceChildren('Mate in ', n);
+        title.classList.remove('ended');
+      }
     }
-    const canUndo = p.state === PLAYER_TURN && p.moves.length > 0 && !app.busy;
-    app.buttons.undoBtn.disabled = !canUndo;
+    app.buttons.undoBtn.disabled = !canUndo(p) || app.busy;
+    // Ván dừng: nút Undo nhấp nháy nhẹ để người chơi biết bấm vào đâu.
+    app.buttons.undoBtn.classList.toggle('attention', p.state === ENDED && !app.busy);
     app.buttons.hintBtn.disabled = p.state !== PLAYER_TURN || app.busy;
   }
 
@@ -282,7 +301,7 @@ export function startApp(root, data) {
     app.hint = null;
     drawBoard();
 
-    // ANIMATING: cho quân trượt trước, rồi mới chấm (bộ giải có thể mất vài trăm ms).
+    // ANIMATING: cho quân trượt trước, rồi mới gọi logic (bộ giải có thể mất vài trăm ms).
     await app.view.animateMove(from, to);
     capture ? sounds.capture() : sounds.move();
     await nextFrame();
@@ -291,22 +310,7 @@ export function startApp(root, data) {
     if (r.result === 'illegal') { app.busy = false; drawBoard(); return; }
     app.lastMove = { from, to };
 
-    if (r.result === 'wrong') {
-      drawBoard();
-      sounds.wrong();
-      vibrate(120);
-      app.view.shake();
-      toast(r.reason === 'stalemate' ? 'Hoà pat rồi! Thử lại nhé' : 'Chưa đúng, thử lại');
-      await wait(650);
-      retry(p);
-      app.lastMove = null;
-      // Quân tự lùi về: vẽ thế sai, cho trượt ngược, rồi vẽ thế đúng.
-      await app.view.animateMove(to, from);
-      app.busy = false;
-      drawBoard();
-      return;
-    }
-
+    // Chỉ khi chiếu hết thật mới có hiệu ứng chiến thắng.
     if (r.result === 'win') {
       drawBoard();
       await onWin();
@@ -314,7 +318,14 @@ export function startApp(root, data) {
       return;
     }
 
-    // Đúng, chưa xong: OPPONENT_TURN.
+    // Đi sai thì KỆ: không rung, không báo sai, không tự lùi. Chỉ khi ván không
+    // thể đi tiếp (hết nước / hòa pat) mới nhắc bấm Undo.
+    if (r.result === 'ended') {
+      onEnded(r.reason);
+      return;
+    }
+
+    // Chưa xong: OPPONENT_TURN.
     drawBoard();
     if (inCheck(p.board)) sounds.check();
     await wait(OPPONENT_DELAY);
@@ -322,19 +333,35 @@ export function startApp(root, data) {
     // opponentMove() đổi dữ liệu bàn ngay, nhưng màn hình vẫn đang vẽ thế cũ,
     // nên cho quân trên màn hình trượt theo nước vừa đi rồi mới vẽ lại.
     const reply = opponentMove(p);
-    const { from: rFrom, to: rTo } = parseMoveText(p.board, reply);
+    const { from: rFrom, to: rTo } = parseMoveText(p.board, reply.move);
     const replyCaptures = app.view.pieces.has(rTo);
     await app.view.animateMove(rFrom, rTo);
     replyCaptures ? sounds.capture() : sounds.move();
     app.lastMove = { from: rFrom, to: rTo };
+    if (reply.result === 'ended') {
+      onEnded(reply.reason);
+      return;
+    }
+    if (inCheck(p.board)) sounds.check();
     app.busy = false;
     drawBoard();
+  }
+
+  /**
+   * Ván dừng mà chưa thắng (hết nước, hòa pat, hoặc bị chiếu hết ngược): vẽ lại,
+   * đổi tiêu đề, nhắc nhẹ bấm Undo. Không rung bàn, không tính là "thua" gì cả.
+   */
+  function onEnded(reason) {
+    app.busy = false;
+    drawBoard();
+    sounds.wrong();
+    toast(END_TEXT[reason].toast);
   }
 
   /** Nút Undo. */
   function onUndo() {
     const p = app.puzzle;
-    if (app.busy || p.state !== PLAYER_TURN) return;
+    if (app.busy || !canUndo(p)) return;
     if (undoMove(p)) {
       sounds.tap();
       app.selected = null;
@@ -353,6 +380,12 @@ export function startApp(root, data) {
   function openHintSheet() {
     if (app.busy || app.puzzle.state !== PLAYER_TURN) return;
     sounds.tap();
+    // Đã đi lệch thì thế cờ này không còn nước đúng nào để gợi ý: nhắc Undo,
+    // không mở bảng mua gợi ý (không để người chơi mất coin vô ích).
+    if (!canHint(app.puzzle)) {
+      toast('Từ thế này không còn chiếu hết kịp. Bấm Undo để quay lại');
+      return;
+    }
     const coins = app.save.economy.coins;
     const option = (level, title, desc) => h('button', {
       class: 'sheet-option',
@@ -622,7 +655,7 @@ export function startApp(root, data) {
       }));
     subScreen('Cài đặt', h('div', { class: 'list-body' },
       toggle('sound', 'Âm thanh', 'Tiếng đi quân, ăn quân, chiến thắng'),
-      toggle('vibration', 'Rung', 'Rung nhẹ khi đi sai và khi thắng'),
+      toggle('vibration', 'Rung', 'Rung nhẹ khi chiếu hết'),
       toggle('showLegalMoves', 'Hiện nước đi được', 'Chấm tròn trên các ô quân đi tới được'),
       h('button', { class: 'btn danger', onclick: confirmReset }, 'Xoá toàn bộ tiến trình'),
       app.saveStatus === 'unavailable' && h('p', { class: 'note' }, 'Trình duyệt đang chặn lưu dữ liệu: tiến trình sẽ mất khi đóng trang.')));

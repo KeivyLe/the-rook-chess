@@ -23,7 +23,7 @@ const THICKNESS = 0.16;
 
 /**
  * Tạo khung vẽ bàn cờ. Trả về đối tượng view gồm phần tử gốc `el` và các hàm
- * render / animateMove / shake / topple / setSize.
+ * render / animateMove / topple / setSize.
  * onSquareTap(sq) được gọi khi người chơi chạm vào một ô (hoặc quân đứng trên ô đó).
  */
 export function createBoardView({ onSquareTap }) {
@@ -152,13 +152,6 @@ export function createBoardView({ onSquareTap }) {
     view.pieces.delete(from);
     view.pieces.set(to, piece);
     return new Promise((resolve) => setTimeout(resolve, SLIDE_MS + 20));
-  };
-
-  /** Rung bàn (đi sai). */
-  view.shake = () => {
-    el.classList.remove('shake');
-    void el.offsetWidth; // ép trình duyệt tính lại để animation chạy lại từ đầu
-    el.classList.add('shake');
   };
 
   /** Vua ở ô `sq` đổ xuống (chiếu hết). */
