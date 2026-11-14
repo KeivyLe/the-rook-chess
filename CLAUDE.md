@@ -194,6 +194,9 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
 - **Bàn cờ:** ô là div đặt bằng `transform: translate`; lỗ không vẽ; dải cạnh dày
   vẽ dưới mỗi ô mà bên dưới (trên màn hình) là mép hoặc lỗ. Người chơi cầm Đen
   thì xoay 180° (phía người chơi luôn ở dưới). Quân hàng dưới có z-index cao hơn.
+  **Quân không được vượt ra ngoài ô** (yêu cầu của chủ dự án): `.piece-inner` cao 86%
+  ô, rộng 71,7% (giữ tỉ lệ 100×120), căn giữa; nhấc quân khi chọn chỉ
+  `translateY(-4%) scale(1.04)`. Đổi dáng quân to hơn thì đo lại bằng getBBox.
 - **Luồng một nước:** `busy = true` (chính là trạng thái ANIMATING) → trượt quân →
   `playerMove` → sai: rung + toast + `retry` + trượt về; đúng: chờ 400 ms →
   `opponentMove` → trượt quân đối thủ; thắng: Vua đổ + pháo giấy + hộp thắng.
