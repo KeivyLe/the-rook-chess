@@ -45,7 +45,7 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
 
 | Vấn đề ở bản gốc (theo đánh giá người chơi) | Bản này làm gì |
 |---|---|
-| Đi một nước đúng nhưng khác đáp án lưu sẵn thì bị báo sai | Không so với đáp án. Sau mỗi nước, bộ giải kiểm tra "còn chiếu hết bắt buộc trong số nước còn lại không". Mọi cách giải đúng đều được tính (có test riêng: level có hai cách chiếu hết ở nước cuối, cả hai đều thắng). |
+| Đi một nước đúng nhưng khác đáp án lưu sẵn thì bị báo sai | Không so với đáp án, và **không báo sai** gì cả: ván cứ tiếp tục, đối thủ vẫn đáp, chỉ chiếu hết thật mới thắng. Mọi cách chiếu hết đều được tính (có test riêng: level có hai cách chiếu hết ở nước cuối, cả hai đều thắng). Đi lệch tới khi ván dừng thì người chơi tự Undo, không giới hạn số lần. Đây là thay đổi so với GDD mục 3.4 (vốn đề xuất báo sai rồi tự lùi nước): người chơi tự nhận ra mình sai khi đối thủ thoát, giống chơi cờ thật hơn. |
 | Bấm gợi ý sau khi đã đi đúng nước đầu, game lùi về và gợi ý lại nước người chơi đã biết | Gợi ý luôn tính từ thế cờ **hiện tại** (có test riêng cho gợi ý giữa ván). |
 | Gợi ý quá đắt so với coin kiếm được, cảm giác bị ép mua | 3 mức gợi ý rõ giá: 20 / 40 / 100 coin. Người chơi trung bình kiếm 10–15 coin mỗi level, cộng 25 coin cho mỗi lần xem quảng cáo (tối đa 5 lần/ngày), nên cứ khoảng 2 level chơi tốt là đủ một gợi ý nhỏ. Bắt đầu với 100 coin. |
 | Quảng cáo quá dày, giữa các level khoảng mỗi 1–2 level | Không có quảng cáo ở 10 level đầu, sau đó cứ 3 level mới có một lần. Có gói "Remove Ads". Chơi thử tự động 60 level xác nhận đúng 16 quảng cáo, sau level 13, 16, …, 58. |
@@ -53,7 +53,7 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
 | Kiểu khuyến mãi gấp ("giảm 50% trong thời gian có hạn") | Không có khuyến mãi gấp, không đếm ngược ép mua. Cửa hàng chỉ có gói coin cố định và Remove Ads. |
 | Quảng cáo làm tắt nhạc của app khác | Không có nhạc nền; âm thanh hiệu ứng tổng hợp bằng Web Audio và tắt được trong Cài đặt. |
 | Bị kẹt ở level khó, độ khó tăng đột ngột | Chương 1–4 tăng dần số nước; trong mỗi chương level được chấm điểm khó tự động rồi xếp **răng cưa**: cứ 3 level thì chèn 1 level dễ để nghỉ. 5 level đầu giới thiệu từng quân. |
-| Puzzle bị lỗi (ví dụ "puzzle bị hòa pat") | Mọi level qua kiểm tra tự động: thế cờ hợp lệ, chiếu hết **đúng** N nước, không có cách chiếu hết sớm hơn, nước đầu duy nhất. Gây hòa pat bị chấm là sai và có thông báo riêng ("Hoà pat rồi!"). |
+| Puzzle bị lỗi (ví dụ "puzzle bị hòa pat") | Mọi level qua kiểm tra tự động: thế cờ hợp lệ, chiếu hết **đúng** N nước, không có cách chiếu hết sớm hơn, nước đầu duy nhất. Gây hòa pat thì ván dừng với tiêu đề "Hoà pat" và nhắc bấm Undo. |
 | Muốn giữ Undo sau khi thắng để xem lại ván | **Chưa làm** (xem mục 4). |
 
 ## 3. Những gì khác bản gốc do điều kiện bài tập
@@ -73,11 +73,12 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
 
 **Đã kiểm thử:**
 
-- 90 test tự động (`npm test`): luật cờ, perft, bộ giải, 3 thế cờ chép từ ảnh bản gốc,
+- 94 test tự động (`npm test`): luật cờ, perft, bộ giải, 3 thế cờ chép từ ảnh bản gốc,
   từng level trong `levels.json`, máy trạng thái màn chơi, kinh tế, tiến trình, lưu game.
 - `npm run playtest`: máy chơi 90 level × 3 ván, đối thủ chọn ngẫu nhiên giữa các nước
-  phòng thủ tốt nhất, thử cả nước sai, Undo, gợi ý mức 3. Kết quả 270/270 ván thắng đúng
-  hạn, 0 lỗi. Lượt chậm nhất của bộ giải là khoảng 0,6 giây (level 60, mate in 4).
+  phòng thủ tốt nhất, thử cả đi lệch (ván phải tiếp tục rồi dừng mà không thắng, Undo về
+  đầu phải như mới), Undo, gợi ý mức 3. Kết quả 270/270 ván thắng đúng hạn, 0 lỗi. Lượt
+  chậm nhất của bộ giải là khoảng 0,8 giây (level 60, mate in 4).
 - `npm run playtest:browser`: chơi 60 level liên tục qua giao diện thật trên Chromium, bấm
   chuột như người thật, rồi chơi Daily. 0 lỗi JavaScript; coin, tiến trình, streak và lịch
   quảng cáo lưu đúng như thiết kế.
