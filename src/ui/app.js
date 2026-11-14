@@ -206,11 +206,34 @@ export function startApp(root, data) {
           h('div', { class: 'subtitle' }, isDaily ? dailyTitle(app.dailyKey) : `Level ${p.level.id}`),
           h('h1', { class: 'title' }, 'Mate in ', h('span', { class: 'moves-left' }, String(p.movesLeft)))),
         h('div', { class: 'top-right' }, coinPill())),
-      h('section', { class: 'board-area' }, view.el),
+      h('section', { class: 'board-area' }, sideLabel('top'), view.el, sideLabel('bottom')),
       h('footer', { class: 'game-bottom' }, hintBtn, undoBtn));
     root.replaceChildren(screen);
     app.buttons = { hintBtn, undoBtn };
     drawBoard();
+  }
+
+  /**
+   * Nhãn cho biết bên nào ở phía nào của bàn và Tốt đi hướng nào, đặt ở mép trên
+   * và mép dưới bàn cờ. Bàn luôn xoay để phía người chơi ở dưới, nên:
+   *   - mép dưới: bên của người chơi, Tốt đi LÊN (↑), ghi "(bạn)";
+   *   - mép trên: bên đối thủ, Tốt đi XUỐNG (↓).
+   * Nhờ vậy dù Vua trắng đứng ở hàng trên cùng (thế cờ puzzle hay có), người chơi
+   * vẫn biết ngay Tốt nào đi về đâu.
+   */
+  function sideLabel(edge) {
+    const mine = playerColor();
+    const color = edge === 'bottom' ? mine : opponent(mine);
+    const name = color === 'w' ? 'Trắng' : 'Đen';
+    const arrow = edge === 'bottom' ? '↑' : '↓';
+    const dir = edge === 'bottom' ? 'đi lên' : 'đi xuống';
+    return h('div', {
+      class: `side-label ${edge} ${color === 'w' ? 'white' : 'black'}`,
+      'aria-label': `Phía ${edge === 'bottom' ? 'dưới' : 'trên'}: quân ${name}${edge === 'bottom' ? ' của bạn' : ' của đối thủ'}, Tốt ${dir}`,
+    },
+    h('span', { class: 'side-pawn', html: pieceSvg(color === 'w' ? 'P' : 'p') }),
+    h('span', { class: 'side-name' }, name, edge === 'bottom' && h('small', {}, ' (bạn)')),
+    h('span', { class: 'side-arrow', 'aria-hidden': 'true' }, arrow));
   }
 
   /** Vẽ lại bàn cờ và trạng thái các nút theo dữ liệu hiện tại. */

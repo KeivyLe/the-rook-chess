@@ -16,16 +16,19 @@ link là `https://keivyle.github.io/the-rook-chess/`.
 ## Cách chơi
 
 1. Đầu màn hình ghi **"Mate in N"**: bạn phải chiếu hết Vua đối phương trong N nước của mình.
-   Số N giảm dần sau mỗi nước đúng, và đổi màu khi chỉ còn 1 nước.
-2. **Chạm một quân** của bạn: các ô đi được hiện chấm tròn, ô ăn được hiện vòng tròn.
+   Số N giảm dần sau mỗi nước của bạn, và đổi màu khi chỉ còn 1 nước.
+2. Bàn luôn xoay để **phía bạn ở dưới**: Tốt của bạn đi lên, Tốt đối thủ đi xuống. Nhãn ở
+   mép trên và mép dưới bàn ghi rõ bên nào ở đâu (ví dụ "Đen ↓" ở trên, "Trắng (bạn) ↑" ở
+   dưới), kể cả khi Vua của bạn đang đứng ở hàng trên cùng.
+3. **Chạm một quân** của bạn: các ô đi được hiện chấm tròn, ô ăn được hiện vòng tròn.
    **Chạm ô đích** để đi. Chạm lại quân đang chọn hoặc ô trống để bỏ chọn.
-3. Đi xong thì đối thủ tự đáp trả. Game **không báo đúng/sai**: đi lệch thì ván cứ tiếp
+4. Đi xong thì đối thủ tự đáp trả. Game **không báo đúng/sai**: đi lệch thì ván cứ tiếp
    tục, chỉ khi bạn thật sự chiếu hết mới có hiệu ứng chiến thắng. Nếu đi hết N nước mà
    chưa chiếu hết (hoặc gây hòa pat, hoặc bị đối thủ chiếu hết ngược), ván dừng lại và
    nút **Undo** sáng lên: bấm Undo để đi lại, bao nhiêu lần cũng được, tới khi thắng.
-4. Tốt tới hàng cuối thì chọn phong Hậu, Xe, Tượng hoặc Mã (có level phải phong Mã!).
-5. Bí thì bấm **bóng đèn** để mua gợi ý bằng coin, hoặc **Undo** để đi lại.
-6. Thắng level đầu tiên được coin; không dùng gợi ý và chưa từng đi lệch thì được thêm coin.
+5. Tốt tới hàng cuối thì chọn phong Hậu, Xe, Tượng hoặc Mã (có level phải phong Mã!).
+6. Bí thì bấm **bóng đèn** để mua gợi ý bằng coin, hoặc **Undo** để đi lại.
+7. Thắng level đầu tiên được coin; không dùng gợi ý và chưa từng đi lệch thì được thêm coin.
    Đã đi lệch thì gợi ý không dùng được (không còn nước đúng để gợi ý): hãy Undo trước.
 
 | | Coin |
