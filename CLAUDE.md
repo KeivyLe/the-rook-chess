@@ -206,6 +206,9 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   **Quân không được vượt ra ngoài ô** (yêu cầu của chủ dự án): `.piece-inner` cao 86%
   ô, rộng 71,7% (giữ tỉ lệ 100×120), căn giữa; nhấc quân khi chọn chỉ
   `translateY(-4%) scale(1.04)`. Đổi dáng quân to hơn thì đo lại bằng getBBox.
+- **Nhãn hai phía bàn** (`sideLabel` trong app.js, `.side-label`): mép trên ghi bên đối
+  thủ + "↓", mép dưới ghi bên người chơi + "(bạn)" + "↑", kèm hình Tốt của bên đó. Để
+  người chơi biết Tốt đi hướng nào khi Vua mình đứng ở hàng trên cùng (yêu cầu chủ dự án).
 - **Luồng một nước:** `busy = true` (chính là trạng thái ANIMATING) → trượt quân →
   `playerMove` → `continue`: chờ 400 ms → `opponentMove` → trượt quân đối thủ;
   `win`: Vua đổ + pháo giấy + hộp thắng (CHỈ lúc này mới có hiệu ứng thắng);
