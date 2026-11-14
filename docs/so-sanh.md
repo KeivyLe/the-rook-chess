@@ -62,8 +62,9 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
   ngẫu nhiên, để bộ giải lọc, rồi tự bỏ mọi quân thừa. Script kiểm tra còn so với các thế
   cờ đã biết của bản gốc để chắc chắn không trùng. Cùng một seed luôn sinh ra cùng một bộ
   level.
-- **Hình ảnh và âm thanh tự làm.** Quân cờ vẽ bằng SVG, icon tự vẽ, màu nền tự chọn,
-  âm thanh tổng hợp bằng code. Bố cục màn chơi thì theo bản gốc.
+- **Hình ảnh và âm thanh tự làm.** Quân cờ theo artstyle "Ivory / Espresso" do nhóm tự
+  thiết kế (quân dẹt khắc nổi, hai màu ngà và nâu cà phê), dựng lại bằng SVG trong code;
+  icon tự vẽ, màu nền tự chọn, âm thanh tổng hợp bằng code. Bố cục màn chơi thì theo bản gốc.
 - **Quảng cáo và thanh toán chỉ là giả lập**, không có SDK thật.
 - **Quy mô:** 60 level chính + 30 Daily, so với khoảng 1010 level của bản gốc. Daily xoay
   vòng 30 level theo ngày, có chuỗi ngày liên tiếp (streak), thay cho các event theo đợt.
