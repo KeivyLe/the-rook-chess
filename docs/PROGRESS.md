@@ -102,3 +102,41 @@ tài liệu cùng lúc.
   test còn dùng mức 3 để kiểm tra lời giải đầy đủ. Giữ lại hay bỏ: chưa quyết.
 - `store.js`: trường `name` của sản phẩm vẫn là tiếng Việt; giao diện không dùng (lấy tên từ
   `product.*` trong file ngôn ngữ), có thể bỏ cho gọn.
+
+## 4. Lưu ý cho phiên sau
+
+### Bắt đầu phiên
+- Đọc `CLAUDE.md` trước (mô hình dữ liệu, API bộ giải, quy ước), rồi file này.
+- Nhánh làm việc là `moc-1-luat-co`. Nếu PR trước đã merge: đưa nhánh về `origin/main` mới
+  nhất trước khi làm tiếp (các commit cũ đã nằm trong `main`).
+- Chạy `npm test` một lần để chắc môi trường ổn (120 ca, khoảng 10 giây).
+
+### Khi sửa code
+- `npm test` phải xanh trước mỗi commit. Sửa `puzzle.js`, bộ giải hoặc giao diện thì chạy thêm
+  `npm run playtest` (khoảng 30 giây) và `npm run playtest:browser` (khoảng 3–5 phút).
+- Đổi số liệu kinh tế (coin, giá gợi ý) thì sửa con số mong đợi trong
+  `tools/playtest-browser.cjs` (hiện coin cuối = 100 + 60·15 + 25 = 1025, gợi ý trừ 40 coin).
+- Thêm chữ mới trên giao diện: thêm khoá vào **cả 15 file** `src/ui/i18n/*.js` rồi gọi
+  `t('khoá')`; `tests/i18n.test.js` báo nếu thiếu. Không viết cứng chữ trong `app.js`.
+  Chữ số nhiều dùng đối tượng `{ one, few, many, other }` (bắt buộc có `other`).
+- Script chơi thử tìm nút bằng class / `data-*`, không theo chữ hiển thị (vì đổi ngôn ngữ).
+  Thêm nút mới mà script cần bấm thì gắn class hoặc `data-*` riêng.
+- Đo giao diện ở khổ 320 px và 390 px: không cuộn ngang, tiêu đề và nhãn tab không bị cắt ở
+  cả 15 ngôn ngữ (tiếng Nga, Đức, Indonesia, Việt thường dài nhất).
+- Quân cờ không được vượt ra ngoài ô; đổi dáng quân thì đo lại bằng `getBBox`.
+- Không sửa tay `levels.json`; muốn đổi thì sửa `tools/` rồi `npm run levels:generate`.
+- Không xoá test perft 8×8.
+
+### Môi trường phiên Claude trên cloud
+- Tạo PR bằng REST (`gh api repos/KeivyLe/the-rook-chess/pulls --method POST --input <file json>`);
+  `gh pr create` không chạy được vì GraphQL bị chặn.
+- Không bật được GitHub Pages qua API; chủ repo tự bật trong Settings → Pages.
+- Playwright và Chromium có sẵn trong container (không cần cài).
+- Server thử nghiệm: `node tools/serve.js 8080`; script chơi thử trình duyệt tự dùng cổng 8123.
+- Container có thể bị thu hồi khi không hoạt động: việc dở dang phải commit và push trước khi
+  dừng, kể cả file nháp (ví dụ bản dịch đang soạn).
+
+### Thói quen làm việc của chủ dự án
+- Trao đổi bằng tiếng Việt; tài liệu trong repo viết tiếng Việt.
+- Thường gửi ảnh chụp màn hình khi muốn sửa giao diện: đối chiếu đúng chỗ trong ảnh.
+- Muốn thấy kết quả bằng ảnh chụp trên khổ điện thoại sau mỗi thay đổi giao diện.
