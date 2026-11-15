@@ -28,6 +28,7 @@ phòng thủ tốt nhất.
 | 5b | Giao diện: `index.html`, `css/style.css`, `src/ui/` (chủ dự án gọi là "Mốc 5") | **Xong**: màn chơi, chọn level, Daily, Shop, Settings, gợi ý, phong cấp, thắng, Ad |
 | 6 | Chơi thử tự động 60 level (Node + trình duyệt), README, `docs/so-sanh.md`, chuẩn bị GitHub Pages | **Xong** |
 | 7 | Tính năng theo "Kế hoạch MKT" (artifact JXJmmH9thE6gjnq1iHES56, tab Tính năng + Kiếm tiền): kinh tế mới, Rook Pass, Starter Bundle, skin, mode Obstacle + Blitz Mate, Trophy | **Xong** |
+| 8 | Tối ưu điện thoại: thanh tab đáy, màn Mode gộp, bàn tự co; gợi ý 1 loại (bóng quân, 20 coin); 15 ngôn ngữ (mặc định EN) | **Xong** |
 | Sau | Kéo thả quân, nút "Xem lại", bộ giải sang Web Worker, chơi thử với người thật; từ kế hoạch MKT (cần máy chủ / app): Bạn cờ, bảng xếp hạng, % đạt Trophy, Classic Masters, thẻ chia sẻ Daily Mate | Chưa |
 
 ## Cấu trúc thư mục
@@ -60,6 +61,8 @@ src/
     sound.js       # âm thanh tổng hợp Web Audio (không file ngoài)
     themes.js      # bảng màu nền theo level, màu Daily
     dom.js         # h() tạo phần tử, wait(), nextFrame()
+    i18n.js        # LANGUAGES (15), createTranslator(lang) → t(key, params), formatDayMonth/formatShortDate
+    i18n/          # en.js, de.js, ... vi.js: mỗi file `export default { khoá: chuỗi }`, cùng bộ khoá
 tests/
   board.test.js    # FEN (kể cả lỗ 'x'), đánh số ô, make/undo
   movegen.test.js  # level mẫu, 6 thế đếm tay, pat, phong cấp, nhập thành, lỗ, perft
@@ -72,6 +75,7 @@ tests/
   trophies.test.js # điều kiện đạt, Bạch kim, collectStats
   progress.test.js # mở khoá, dateKey/previousDateKey, Daily xoay vòng, streak
   storage.test.js  # localStorage giả, JSON hỏng, bị chặn, save cũ thiếu trường
+  i18n.test.js     # 15 ngôn ngữ đủ khoá + cùng chỗ điền {tên}, khoá giao diện dùng đều có, số nhiều
 tools/
   level-check.js   # tiêu chuẩn puzzle dùng chung: analyzePuzzle, positionProblem, difficultyScore
   generate-levels.js  # sinh thế ngẫu nhiên có seed → lọc → rút gọn → chọn → levels.json
@@ -188,9 +192,15 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   Blitz: mỗi thế +1 điểm, hết giờ `recordBlitz(modes, score, today)`.
 - **Kiếm tiền theo "Kế hoạch MKT"** (thay GDD 6; chủ dự án chọn): KHÔNG quảng cáo xen giữa,
   không banner, không thưởng coin bằng quảng cáo, không bán coin, không "Remove Ads".
-  Coin: khởi đầu 100, giải lần đầu +10, perfect +5, Daily +20, giải lại 0; gợi ý 20/40/100.
+  Coin: khởi đầu 100, giải lần đầu +10, perfect +5, Daily +20, giải lại 0; gợi ý `HINT_COST` = 20.
   Rewarded: tối đa 1 lần/ngày, chỉ khi `puzzle.wrongMoves ≥ 2` ở bài đang chơi và không có
-  Pass, đổi lấy 1 gợi ý mức 2 (`canWatchHintAd`, `useHintAd`).
+  Pass, đổi lấy 1 gợi ý (`canWatchHintAd`, `useHintAd`); chỉ hiện trong hộp "không đủ coin".
+- **Gợi ý một loại** (yêu cầu chủ dự án, Mốc 8): mỗi lần bấm = đúng 1 nước, `getHint(p, 2)`.
+  Giao diện vẽ bóng mờ của quân trượt lặp từ ô đi tới ô đến (`.hint-ghost`, `marks.hintFrom/hintTo`
+  trong board-view, CSS dùng `--dx/--dy` + thuộc tính `translate`) và chọn sẵn quân đó. Mate in N
+  → tối đa N lần bấm là thắng. Đã lệch (`!onTrack`) thì `rewindToTrack(p)` tự Undo về thế còn thắng
+  (miễn phí) rồi mới trừ coin và gợi ý. `getHint` mức 1 và 3 vẫn còn trong puzzle.js (test, playtest
+  dùng) nhưng giao diện không dùng nữa.
 - **Cửa hàng giả lập (`store.js`):** Rook Pass $4.99/tháng (dùng thử 7 ngày một lần, mỗi
   kỳ 30 ngày) = mọi mode + gợi ý miễn phí + skin quân độc quyền "royal" + không rewarded.
   Starter Bundle $9.99 chỉ trong 7 ngày đầu kể từ `installDate` = mode Obstacle + bàn và quân
@@ -213,10 +223,22 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
 - **Chạy:** `npm start` rồi mở http://localhost:8080 (mở file:// thì fetch bị chặn).
   `window.rookChess` là đối tượng app để kiểm thử trên trình duyệt
   (`.puzzle`, `.save`, `.actions.startLevel(id)`...).
-- **Bố cục màn chơi:** icon lưới 9 chấm (trái, mở chọn level; Daily thì là nút back),
-  "Level N" nhỏ (Daily: "12 tháng 11"), "Mate in N" to (N = số nước còn lại,
-  đổi màu khi còn 1 ở level nhiều nước; thắng rồi thì giữ đề bài), coin (phải),
-  bàn cờ, 2 nút tròn: gợi ý và Undo (mờ khi không dùng được).
+- **Thiết kế cho điện thoại** (Mốc 8): mọi màn có **thanh tab cố định ở đáy** (`tabBar()`,
+  `.tab-bar`, cao `--tabbar-h`): Play · Daily · Modes · Trophies · Shop; chấm đỏ khi Daily hôm
+  nay chưa giải / còn Starter Bundle. Chạm viên coin = mở Shop; bánh răng = Cài đặt.
+  Màn **Modes** gộp Daily, Blitz Mate, Obstacle (thẻ `.mode-card`). Không còn màn Home/hub riêng.
+- **Bố cục màn chơi:** `.game-screen` cao đúng `100dvh` (không cuộn): hàng 1 nút trái (lưới 9
+  chấm mở chọn level; Obstacle/Blitz là nút back) + coin + bánh răng; hàng 2 "Level N" nhỏ và
+  "Mate in N" to (rộng hết màn để chữ dài vẫn vừa 320 px; `.title.urgent` khi còn 1 nước);
+  bàn cờ; 2 nút tròn gợi ý (nhãn giá `.hint-badge`: "20" hoặc "PASS") và Undo; thanh tab.
+  `fitBoard()` đo `.board-area` rồi tính cỡ ô để bàn vừa phần còn lại (tối đa 118 px).
+- **Đa ngôn ngữ** (`ui/i18n.js`): 15 ngôn ngữ EN, DE, FR, JA, ES, PT, KO, RU, ID, HI, IT, TR, ZH,
+  PL, VI; mặc định `'en'` (`settings.language`), đổi trong Cài đặt. Mọi chữ trên giao diện đi qua
+  `t('khoá', {tên})`; số nhiều là đối tượng `{one, few, many, other}` chọn bằng `Intl.PluralRules`;
+  ngày bằng `Intl.DateTimeFormat`. Thêm chữ mới: thêm khoá vào **cả 15 file** `ui/i18n/*.js`
+  (`tests/i18n.test.js` bắt thiếu). Tên sản phẩm "Rook Pass", "Starter Bundle", "Blitz Mate",
+  "Obstacle" giữ nguyên tiếng Anh ở mọi ngôn ngữ. Nút cho script chơi thử tìm bằng class /
+  `data-*` (ví dụ `.promo-choice[data-piece="q"]`), không theo chữ. Tài liệu vẫn viết tiếng Việt.
 - **Hình ảnh tự làm**, chỉ theo bố cục của game gốc: quân SVG, bảng màu, icon đều
   tự vẽ. Không dùng font/ảnh/âm thanh bên ngoài.
 - **Artstyle quân cờ "Ivory / Espresso"** (do chủ dự án thiết kế, ảnh mẫu là bảng
@@ -245,8 +267,7 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
 - **Màn hình mode** (app.js): `app.mode` ∈ `main | daily | obstacle | blitz`. Obstacle:
   board-view `setStyle({obstacles: true})` vẽ ô `'x'` thành khối đá. Blitz: đồng hồ
   `BLITZ_SECONDS` = 180 giây trên dòng subtitle, nút gợi ý thành nút "Bỏ qua", ván dừng
-  (ENDED) thì tự sang thế khác, không có gợi ý. Màn chọn level có 2 hàng nút: Daily / Shop /
-  Cài đặt và Obstacle / Blitz / Trophy. Trophy mới đạt hiện thông báo `.trophy-toast`.
+  (ENDED) thì tự sang thế khác, không có gợi ý. Trophy mới đạt hiện thông báo `.trophy-toast`.
 - **Skin bàn** đặt bằng `data-skin` trên `.board` (và mẫu `.skin-swatch` trong Shop), CSS
   `[data-skin="marble"]`, `[data-skin="neon"]` đổi biến `--sq-*`; skin quân truyền vào
   `pieceSvg(piece, skin)`. Pháo giấy lấy màu `SKIN_CONFETTI[skin quân]`.
@@ -260,7 +281,9 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   hoặc giao diện; không nằm trong `npm test` vì chậm.
 - playtest-browser tự bật server cổng 8123, xoá localStorage, chơi 1 → 60 bằng
   bestHint, rồi kiểm tra save: 60 level, coin = 100 + 60·15 + 25, streak 1, 0 quảng cáo
-  tự hiện, hộp Starter Bundle đúng 2 lần (sau level 10 và Daily), có các Trophy chương.
+  tự hiện, hộp Starter Bundle đúng 2 lần (sau level 10 và Daily), có các Trophy chương;
+  cuối cùng mở level mate in 2 đầu tiên, chỉ bấm gợi ý + chạm ô bóng quân tới: phải thắng sau
+  đúng 2 lần gợi ý và bị trừ 40 coin.
   Đổi số liệu kinh tế thì sửa con số mong đợi trong script.
 - **GitHub Pages:** trang tĩnh, không build. Settings → Pages → Deploy from a branch →
   `main` / root. Mọi đường dẫn trong game phải là **tương đối** (`levels.json`,
@@ -289,5 +312,5 @@ npm run playtest         # chơi thử tự động 150 bài × 3 ván (khoảng
 npm run playtest:browser # chơi 60 level qua giao diện thật (khoảng 4,5 phút, cần Playwright)
 ```
 
-Test hiện có 113 ca, chạy khoảng 13 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
+Test hiện có 120 ca, chạy khoảng 10 giây (phần lớn là verify levels.json). Perft 8×8 (khai cuộc, Kiwipete, thế số 3)
 là bằng chứng mạnh nhất rằng movegen + make/undo đúng; đừng xoá.

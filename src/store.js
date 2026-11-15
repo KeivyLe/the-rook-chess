@@ -54,7 +54,7 @@ export const MODES = {
  * (giá đề xuất trong kế hoạch), không có thanh toán thật.
  */
 export const PRODUCTS = {
-  'rook-pass': { name: 'Rook Pass', price: '$4.99/tháng', kind: 'pass' },
+  'rook-pass': { name: 'Rook Pass', price: '$4.99', kind: 'pass' /* mỗi tháng; giao diện ghi "/month" theo ngôn ngữ (khoá pass.price) */ },
   'starter-bundle': {
     name: 'Starter Bundle', price: '$9.99', kind: 'bundle',
     grants: ['mode:obstacle', 'board:marble', 'pieces:marble'],

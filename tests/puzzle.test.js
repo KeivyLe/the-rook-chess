@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 
 import { toFen, parseSquare } from '../src/board.js';
 import {
-  createPuzzle, playerMove, opponentMove, undoMove, restart, getHint, canUndo, canHint,
+  createPuzzle, playerMove, opponentMove, undoMove, restart, getHint, canUndo, canHint, rewindToTrack,
   legalTargets, needsPromotion, summary, PLAYER_TURN, OPPONENT_TURN, ENDED, WON,
 } from '../src/puzzle.js';
 import { createRng } from '../tools/generate-levels.js';
@@ -242,4 +242,18 @@ test('chơi hết các level thật trong levels.json chỉ bằng gợi ý mứ
     }
     assert.equal(p.state, WON, `level ${level.id} chưa thắng sau ${level.mateIn} nước`);
   }
+});
+
+test('rewindToTrack: đã lệch (kể cả ván đã dừng) thì lùi về thế còn thắng gần nhất', () => {
+  const p = createPuzzle(GDD_AS_M2, { random: fixed });
+  assert.equal(rewindToTrack(p), 0, 'đang đúng đường thì không lùi');
+  playerMove(p, 'd1d4');   // lệch
+  opponentMove(p);
+  playerMove(p, 'd4d1');   // hết nước → ENDED
+  assert.equal(p.state, ENDED);
+  assert.equal(rewindToTrack(p), 2);
+  assert.equal(p.state, PLAYER_TURN);
+  assert.equal(p.onTrack, true);
+  assert.equal(p.movesLeft, 2);
+  assert.equal(canHint(p), true);
 });

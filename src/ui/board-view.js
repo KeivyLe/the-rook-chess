@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { h } from './dom.js';
-import { pieceSvg, PIECE_NAMES } from './pieces.js';
+import { pieceSvg } from './pieces.js';
 import { HOLE, EMPTY, fileOf, rankOf, sqIndex, squareName, colorOf, typeOf } from '../board.js';
 
 /** Thời gian quân trượt (ms), khớp với transition trong style.css. */
@@ -40,8 +40,9 @@ const THICKNESS = 0.16;
  * render / animateMove / topple / setSize.
  * onSquareTap(sq) được gọi khi người chơi chạm vào một ô (hoặc quân đứng trên ô đó).
  */
-export function createBoardView({ onSquareTap }) {
-  const el = h('div', { class: 'board', role: 'grid', 'aria-label': 'Bàn cờ' });
+export function createBoardView({ onSquareTap, t = (key) => key }) {
+  // `t` là hàm dịch (ui/i18n.js) để nhãn trợ năng theo ngôn ngữ người chơi chọn.
+  const el = h('div', { class: 'board', role: 'grid', 'aria-label': t('aria.board') });
   const view = {
     el,
     board: null,
@@ -111,7 +112,7 @@ export function createBoardView({ onSquareTap }) {
         class: classes.join(' '),
         'data-sq': sq,
         role: 'gridcell',
-        'aria-label': obstacle ? `${squareName(board, sq)}: vật cản` : squareName(board, sq),
+        'aria-label': obstacle ? t('aria.obstacle', { sq: squareName(board, sq) }) : squareName(board, sq),
         style: { transform: `translate(${x}px, ${y}px)` },
         html: obstacle ? OBSTACLE_SVG : null,
       }));
@@ -143,16 +144,36 @@ export function createBoardView({ onSquareTap }) {
       el.append(piece);
       view.pieces.set(sq, piece);
     }
+
+    // 4. Gợi ý: bóng mờ của quân cần đi trượt từ ô đi tới ô đến, lặp lại liên tục,
+    //    để người chơi THẤY nước cần đi mà không phải đọc tên ô (yêu cầu chủ dự án).
+    if (marks.hintFrom !== undefined && marks.hintTo !== undefined && board.squares[marks.hintFrom] !== EMPTY) {
+      const a = view.position(marks.hintFrom);
+      const b = view.position(marks.hintTo);
+      el.append(h('div', {
+        class: 'hint-ghost',
+        'aria-hidden': 'true',
+        style: {
+          transform: `translate(${a.x}px, ${a.y}px)`,
+          '--dx': `${b.x - a.x}px`,
+          '--dy': `${b.y - a.y}px`,
+        },
+      }, h('div', { class: 'piece-inner', html: pieceSvg(board.squares[marks.hintFrom], view.pieceSkin) })));
+    }
   };
 
   /** Tạo phần tử một quân đứng ở ô `sq`. */
   const makePiece = (p, sq) => {
     const { x, y, row } = view.position(sq);
-    const color = colorOf(p) === 'w' ? 'trắng' : 'đen';
+    const white = colorOf(p) === 'w';
     return h('div', {
-      class: `piece ${colorOf(p) === 'w' ? 'white' : 'black'}`,
+      class: `piece ${white ? 'white' : 'black'}`,
       'data-sq': sq,
-      'aria-label': `${PIECE_NAMES[typeOf(p)]} ${color} ở ${squareName(view.board, sq)}`,
+      'aria-label': t('aria.piece', {
+        color: t(white ? 'side.white' : 'side.black'),
+        piece: t(`piece.${typeOf(p)}`),
+        sq: squareName(view.board, sq),
+      }),
       style: { transform: `translate(${x}px, ${y}px)`, zIndex: 10 + row },
     }, h('div', { class: 'piece-inner', html: pieceSvg(p, view.pieceSkin) }));
   };

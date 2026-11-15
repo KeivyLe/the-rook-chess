@@ -33,9 +33,9 @@ export const SAVE_KEY = 'the-rook-chess/save';
  */
 export const SAVE_VERSION = 2;
 
-/** Cài đặt mặc định (màn Settings, GDD mục 7.1). */
+/** Cài đặt mặc định (màn Settings, GDD mục 7.1). Ngôn ngữ mặc định: tiếng Anh. */
 export function createSettings() {
-  return { sound: true, music: true, vibration: true, showLegalMoves: true };
+  return { language: 'en', sound: true, music: true, vibration: true, showLegalMoves: true };
 }
 
 /** Tạo save data mới cho người chơi lần đầu mở game. */

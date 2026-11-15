@@ -24,12 +24,12 @@ export const REWARD_FIRST_SOLVE = 10;   // giải level lần đầu
 export const REWARD_PERFECT_BONUS = 5;  // thêm nếu không dùng gợi ý, chưa từng đi lệch
 export const REWARD_DAILY = 20;         // giải Daily Puzzle (gấp đôi level thường)
 
-/** Giá 3 mức gợi ý (coin). Người có Rook Pass dùng gợi ý miễn phí. */
-export const HINT_COSTS = {
-  1: 20,  // tô sáng quân cần đi
-  2: 40,  // hiện nước đi tiếp theo
-  3: 100, // hiện toàn bộ lời giải
-};
+/**
+ * Giá một lần gợi ý (coin). Chỉ có MỘT loại gợi ý: mỗi lần bấm, game cho xem nước
+ * tiếp theo cần đi (bằng animation, không ghi tên ô). Mate in N thì tối đa N lần
+ * gợi ý là giải xong. Người có Rook Pass dùng gợi ý miễn phí.
+ */
+export const HINT_COST = 20;
 
 /** Rewarded: tối đa 1 lượt mỗi ngày, chỉ khi đã sai ít nhất 2 lần ở bài đang chơi. */
 export const HINT_ADS_PER_DAY = 1;
@@ -62,29 +62,23 @@ export function addSolveReward(economy, info) {
   return gained;
 }
 
-/** Kiểm tra mức gợi ý hợp lệ (1, 2 hoặc 3), sai thì báo lỗi. */
-function checkHintLevel(hintLevel) {
-  if (HINT_COSTS[hintLevel] === undefined) throw new Error(`Mức gợi ý không hợp lệ: ${hintLevel} (chỉ có 1, 2, 3)`);
+/** Giá thật phải trả cho một lần gợi ý: 0 nếu có Rook Pass. */
+export function hintCost(hasPass = false) {
+  return hasPass ? 0 : HINT_COST;
 }
 
-/** Giá thật phải trả cho gợi ý mức `hintLevel`: 0 nếu có Rook Pass. */
-export function hintCost(hintLevel, hasPass = false) {
-  checkHintLevel(hintLevel);
-  return hasPass ? 0 : HINT_COSTS[hintLevel];
-}
-
-/** Đủ coin để mua gợi ý mức `hintLevel` không (có Rook Pass thì luôn đủ)? */
-export function canAffordHint(economy, hintLevel, hasPass = false) {
-  return economy.coins >= hintCost(hintLevel, hasPass);
+/** Đủ coin để mua một lần gợi ý không (có Rook Pass thì luôn đủ)? */
+export function canAffordHint(economy, hasPass = false) {
+  return economy.coins >= hintCost(hasPass);
 }
 
 /**
- * Trả coin để mua gợi ý. Không đủ coin thì không trừ gì.
+ * Trả coin cho một lần gợi ý. Không đủ coin thì không trừ gì.
  * Có Rook Pass thì miễn phí (cost = 0).
  * Trả về { ok, cost, coins } với coins là số dư sau giao dịch.
  */
-export function spendForHint(economy, hintLevel, hasPass = false) {
-  const cost = hintCost(hintLevel, hasPass);
+export function spendForHint(economy, hasPass = false) {
+  const cost = hintCost(hasPass);
   if (economy.coins < cost) return { ok: false, cost, coins: economy.coins };
   economy.coins -= cost;
   return { ok: true, cost, coins: economy.coins };

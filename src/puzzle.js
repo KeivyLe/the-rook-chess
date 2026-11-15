@@ -233,6 +233,20 @@ export function undoMove(puzzle) {
 }
 
 /**
+ * Lùi về thế cờ gần nhất mà người chơi vẫn còn chiếu hết bắt buộc (onTrack) và
+ * đang tới lượt mình. Dùng cho nút gợi ý: đã đi lệch thì gợi ý tự đưa người chơi
+ * về chỗ còn thắng rồi mới chỉ nước. Trả về số lần Undo đã làm (0 nếu không cần).
+ */
+export function rewindToTrack(puzzle) {
+  let steps = 0;
+  while (!(puzzle.state === PLAYER_TURN && puzzle.onTrack) && canUndo(puzzle)) {
+    undoMove(puzzle);
+    steps++;
+  }
+  return steps;
+}
+
+/**
  * Nút Restart: bắt đầu lại level từ đầu. Giữ số lần sai/gợi ý đã dùng
  * (để thưởng "không gợi ý, không đi sai" vẫn công bằng).
  */

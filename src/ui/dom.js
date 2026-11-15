@@ -6,7 +6,7 @@
  * Tạo một phần tử HTML. Ví dụ:
  *   h('button', { class: 'btn', onclick: play }, 'Chơi')
  * attrs: thuộc tính bắt đầu bằng "on" là sự kiện (onclick → addEventListener('click')),
- * "class" là className, "style" có thể là chuỗi hoặc đối tượng, "html" là innerHTML
+ * "class" là className, "style" có thể là chuỗi hoặc đối tượng (kể cả biến CSS "--x"), "html" là innerHTML
  * (chỉ dùng cho SVG do chính game tạo ra, không bao giờ cho chữ người dùng nhập).
  * children: chuỗi (thành chữ), phần tử, hoặc mảng; null/false thì bỏ qua.
  */
@@ -17,7 +17,13 @@ export function h(tag, attrs = {}, ...children) {
     if (key.startsWith('on') && typeof value === 'function') el.addEventListener(key.slice(2), value);
     else if (key === 'class') el.className = value;
     else if (key === 'html') el.innerHTML = value;
-    else if (key === 'style' && typeof value === 'object') Object.assign(el.style, value);
+    else if (key === 'style' && typeof value === 'object') {
+      // Biến CSS (tên bắt đầu bằng "--") phải đặt bằng setProperty, các thuộc tính khác gán thẳng.
+      for (const [prop, v] of Object.entries(value)) {
+        if (prop.startsWith('--')) el.style.setProperty(prop, v);
+        else el.style[prop] = v;
+      }
+    }
     else el.setAttribute(key, value === true ? '' : value);
   }
   append(el, children);

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 import {
   createEconomy, solveReward, addSolveReward, canAffordHint, spendForHint, hintCost,
-  canWatchHintAd, useHintAd, START_COINS, HINT_COSTS, HINT_ADS_PER_DAY,
+  canWatchHintAd, useHintAd, START_COINS, HINT_COST, HINT_ADS_PER_DAY,
 } from '../src/economy.js';
 
 test('người chơi mới có 100 coin, chưa dùng rewarded', () => {
@@ -25,22 +25,21 @@ test('thưởng giải level: lần đầu +10, hoàn hảo +5, Daily +20, giả
   assert.equal(e.coins, 115);
 });
 
-test('gợi ý 3 mức 20/40/100 coin; không đủ coin thì không trừ', () => {
-  assert.deepEqual(HINT_COSTS, { 1: 20, 2: 40, 3: 100 });
+test('một loại gợi ý duy nhất: 20 coin mỗi lần; không đủ coin thì không trừ', () => {
+  assert.equal(HINT_COST, 20);
   const e = createEconomy(); // 100 coin
-  assert.deepEqual(spendForHint(e, 2), { ok: true, cost: 40, coins: 60 });
-  assert.equal(canAffordHint(e, 3), false);
-  assert.deepEqual(spendForHint(e, 3), { ok: false, cost: 100, coins: 60 });
-  assert.equal(e.coins, 60);
-  assert.throws(() => spendForHint(e, 4), /Mức gợi ý/);
+  for (let i = 0; i < 5; i++) assert.equal(spendForHint(e).ok, true);
+  assert.equal(e.coins, 0);
+  assert.equal(canAffordHint(e), false);
+  assert.deepEqual(spendForHint(e), { ok: false, cost: 20, coins: 0 });
 });
 
-test('Rook Pass: gợi ý miễn phí ở mọi mức', () => {
+test('Rook Pass: gợi ý miễn phí', () => {
   const e = createEconomy();
   e.coins = 0;
-  assert.equal(hintCost(3, true), 0);
-  assert.equal(canAffordHint(e, 3, true), true);
-  assert.deepEqual(spendForHint(e, 3, true), { ok: true, cost: 0, coins: 0 });
+  assert.equal(hintCost(true), 0);
+  assert.equal(canAffordHint(e, true), true);
+  assert.deepEqual(spendForHint(e, true), { ok: true, cost: 0, coins: 0 });
 });
 
 test('rewarded: chỉ khi sai ≥ 2 lần ở bài đang chơi, 1 lượt/ngày, không cho người có Pass', () => {
