@@ -334,7 +334,7 @@ export function startApp(root, data) {
         ? h('button', { class: 'icon-btn', 'aria-label': t('levels.title'), onclick: () => { sounds.tap(); showLevelSelect(); } }, icon('grid'))
         : h('span', { class: 'icon-btn spacer' });
 
-    const view = createBoardView({ onSquareTap, t });
+    const view = createBoardView({ onSquareTap, canDrag, onDragStart, onDrop, t });
     app.view = view;
     view.setStyle({ ...skinsNow(), obstacles: app.mode === 'obstacle' });
 
@@ -461,6 +461,34 @@ export function startApp(root, data) {
     drawBoard();
   }
 
+  /** Quân ở ô `sq` có kéo được lúc này không: đúng lượt mình, không đang chạy animation. */
+  function canDrag(sq) {
+    const p = app.puzzle;
+    return !app.busy && p.state === PLAYER_TURN && colorOf(p.board.squares[sq]) === playerColor();
+  }
+
+  /** Bắt đầu kéo quân ở ô `sq`: chọn quân đó như khi chạm (hiện ô đi được). */
+  function onDragStart(sq) {
+    if (app.selected !== sq) {
+      app.selected = sq;
+      app.targets = legalTargets(app.puzzle, sq);
+      sounds.tap();
+    }
+    drawBoard();
+  }
+
+  /**
+   * Thả quân kéo từ `from` xuống ô `to` (-1 = ngoài bàn). Ô đi được thì đi như chạm-chạm;
+   * không thì quân về chỗ cũ và vẫn được chọn, để người chơi chạm ô đến nếu muốn.
+   */
+  function onDrop(from, to) {
+    const p = app.puzzle;
+    const ok = !app.busy && p.state === PLAYER_TURN && app.selected === from && app.targets.some((x) => x.to === to);
+    if (ok) { tryMove(from, to); return; }
+    app.view.clearHold();
+    drawBoard();
+  }
+
   /** Hỏi quân phong cấp. Trả về Promise với chữ 'q' | 'r' | 'b' | 'n', hoặc null nếu huỷ. */
   function askPromotion() {
     return new Promise((resolve) => {
@@ -488,7 +516,7 @@ export function startApp(root, data) {
       // Đang theo gợi ý (đúng ô gợi ý) thì phong đúng quân gợi ý, khỏi hỏi.
       const fromHint = app.hint && app.hint.from === from && app.hint.to === to ? app.hint.promotion : null;
       promo = fromHint ?? await askPromotion();
-      if (!promo) return;
+      if (!promo) { app.view.clearHold(); drawBoard(); return; } // huỷ: quân kéo thả về chỗ cũ
     }
     const text = squareName(p.board, from) + squareName(p.board, to) + promo;
     const capture = p.board.squares[to] !== '.';

@@ -100,7 +100,6 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
   kẹt rồi chỉnh độ khó và giá gợi ý. Chơi thử tự động chỉ chứng minh game *đúng*, chưa
   chứng minh game *hay*: độ khó do máy chấm (số thế cờ bộ giải duyệt) có thể khác cảm nhận
   của người, và vài thế cờ do máy sinh trông kém tự nhiên hơn level người soạn.
-- **Kéo thả quân:** hiện chỉ chạm hai lần (chọn quân, chọn ô).
 - **Nút "Xem lại" ở màn thắng** để xem lại ván vừa giải.
 - **Bộ giải chạy trên luồng chính:** ở level mate in 4, bàn có thể "đứng" khoảng nửa giây sau
   nước đi. Có thể chuyển bộ giải sang Web Worker.

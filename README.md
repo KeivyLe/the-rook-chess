@@ -26,6 +26,8 @@ link là `https://keivyle.github.io/the-rook-chess/`.
    dưới), kể cả khi Vua của bạn đang đứng ở hàng trên cùng.
 3. **Chạm một quân** của bạn: các ô đi được hiện chấm tròn, ô ăn được hiện vòng tròn.
    **Chạm ô đích** để đi. Chạm lại quân đang chọn hoặc ô trống để bỏ chọn.
+   Hoặc **giữ và kéo** quân tới ô đích rồi thả; thả ra ngoài bàn hay vào ô không đi được
+   thì quân về chỗ cũ (vẫn được chọn).
 4. Đi xong thì đối thủ tự đáp trả. Game **không báo đúng/sai**: đi lệch thì ván cứ tiếp
    tục, chỉ khi bạn thật sự chiếu hết mới có hiệu ứng chiến thắng. Nếu đi hết N nước mà
    chưa chiếu hết (hoặc gây hòa pat, hoặc bị đối thủ chiếu hết ngược), ván dừng lại và

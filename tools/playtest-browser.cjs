@@ -9,7 +9,8 @@
 //
 // Script tự bật tools/serve.js ở cổng 8123, mở game với dữ liệu lưu trống, rồi:
 //   - chơi lần lượt level 1 → 60: mỗi lượt hỏi bộ giải nước đúng (bestHint),
-//     bấm ô đi và ô đến, chọn quân nếu phong cấp, chờ đối thủ đáp;
+//     bấm ô đi và ô đến (level chẵn: KÉO THẢ quân bằng chuột; trước đó thử thả ra
+//     ngoài bàn một lần, quân phải về ô cũ), chọn quân nếu phong cấp, chờ đối thủ đáp;
 //   - bấm "Next level" ở màn thắng; gặp hộp mời Starter Bundle (sau level 10 và
 //     sau Daily đầu tiên) thì bấm "Later";
 //   - KHÔNG được có quảng cáo nào xuất hiện (kế hoạch MKT: không quảng cáo xen giữa);
@@ -48,15 +49,55 @@ async function tapSquare(page, sq) {
   await target.click({ force: true });
 }
 
+/** Toạ độ giữa ô `sq` trên màn hình (đọc từ phần tử ô, nên đã tính xoay bàn). */
+async function squareCenter(page, sq) {
+  const box = await page.locator(`.board .square[data-sq="${sq}"]`).boundingBox();
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/** Kéo quân từ ô `from` thả xuống điểm `to` ({x, y} trên màn hình) bằng chuột. */
+async function dragTo(page, from, to) {
+  const a = await squareCenter(page, from);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x, to.y, { steps: 8 });
+  await page.mouse.up();
+}
+
+/**
+ * Kéo thả nước from → to. Lần đầu (`tryOffBoard`) thả ra ngoài bàn trước: quân phải
+ * về ô cũ, vẫn được chọn, chưa có nước nào được đi.
+ */
+async function dragMove(page, from, to, tryOffBoard) {
+  if (tryOffBoard) {
+    const board = await page.locator('.board').boundingBox();
+    const before = await page.evaluate(() => window.rookChess.puzzle.board.history.length);
+    await dragTo(page, from, { x: board.x + board.width / 2, y: board.y - 24 }); // phía trên bàn
+    const after = await page.evaluate(() => ({
+      moves: window.rookChess.puzzle.board.history.length,
+      selected: window.rookChess.selected,
+      held: !!document.querySelector('.board .piece.dragging, .board .piece.dropped'),
+    }));
+    if (after.moves !== before || after.selected !== from || after.held) {
+      throw new Error(`thả ra ngoài bàn: quân không về ô cũ (${JSON.stringify(after)})`);
+    }
+  }
+  await dragTo(page, from, await squareCenter(page, to));
+}
+
 /** Chơi hết level đang mở trên màn hình. Trả về số nước người chơi đã đi. */
-async function playCurrentLevel(page) {
+async function playCurrentLevel(page, { drag = false } = {}) {
   for (let turn = 0; turn < 6; turn++) {
     const state = await page.evaluate(() => window.rookChess.puzzle.state);
     if (state === 'WON') return turn;
     const m = await nextMove(page);
     if (!m) throw new Error('bộ giải không tìm được nước');
-    await tapSquare(page, m.from);
-    await tapSquare(page, m.to);
+    if (drag) {
+      await dragMove(page, m.from, m.to, turn === 0);
+    } else {
+      await tapSquare(page, m.from);
+      await tapSquare(page, m.to);
+    }
     if (m.promotion) {
       await page.locator(`.promo-choice[data-piece="${m.promotion}"]`).click();
     }
@@ -107,7 +148,7 @@ async function continueAfterWin(page) {
       if (shown !== id) { failures.push(`mong đợi level ${id}, màn hình đang là level ${shown}`); break; }
       const t = Date.now();
       try {
-        await playCurrentLevel(page);
+        await playCurrentLevel(page, { drag: id % 2 === 0 });
       } catch (e) {
         failures.push(`level ${id}: ${e.message}`);
         break;

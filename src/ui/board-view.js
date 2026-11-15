@@ -11,6 +11,8 @@
 //   - Mode Obstacle: ô 'x' là VẬT CẢN, vẽ thành ô có khối đá (luật đi giống lỗ).
 //   - Skin: skin bàn đặt bằng thuộc tính data-skin (CSS đổi màu ô), skin quân truyền
 //     vào pieceSvg.
+//   - Kéo thả: ngoài chạm-chạm, người chơi có thể giữ quân rồi kéo tới ô đến. Dùng
+//     Pointer Events nên chạy cả chuột lẫn cảm ứng. Kéo chưa đủ xa thì vẫn coi là chạm.
 //
 // File này chỉ VẼ theo dữ liệu được đưa vào; không tự quyết định luật hay lượt đi.
 // =============================================================================
@@ -34,13 +36,19 @@ const OBSTACLE_SVG = `<svg class="obstacle-art" viewBox="0 0 100 100" aria-hidde
 
 /** Độ dày cạnh bàn so với cạnh ô. */
 const THICKNESS = 0.16;
+/** Phải kéo xa hơn ngần này (tính theo cạnh ô) mới thành kéo thả; ngắn hơn là chạm. */
+const DRAG_START = 0.18;
 
 /**
  * Tạo khung vẽ bàn cờ. Trả về đối tượng view gồm phần tử gốc `el` và các hàm
  * render / animateMove / topple / setSize.
  * onSquareTap(sq) được gọi khi người chơi chạm vào một ô (hoặc quân đứng trên ô đó).
+ * Kéo thả (không bắt buộc, thiếu thì bàn chỉ nhận chạm):
+ *   canDrag(sq)       → true nếu quân ở ô `sq` được phép kéo lúc này (quân mình, đúng lượt);
+ *   onDragStart(sq)   khi bắt đầu kéo (nơi gọi chọn quân, hiện ô đi được);
+ *   onDrop(from, to)  khi thả; `to` = -1 nếu thả ra ngoài bàn / vào lỗ / vật cản.
  */
-export function createBoardView({ onSquareTap, t = (key) => key }) {
+export function createBoardView({ onSquareTap, canDrag = () => false, onDragStart = () => {}, onDrop = () => {}, t = (key) => key }) {
   // `t` là hàm dịch (ui/i18n.js) để nhãn trợ năng theo ngôn ngữ người chơi chọn.
   const el = h('div', { class: 'board', role: 'grid', 'aria-label': t('aria.board') });
   const view = {
@@ -51,6 +59,12 @@ export function createBoardView({ onSquareTap, t = (key) => key }) {
     pieces: new Map(), // ô → phần tử quân đang vẽ
     pieceSkin: 'ivory',
     obstacles: false,  // true: ô 'x' là vật cản (vẽ khối đá), false: là lỗ (không vẽ)
+    // Kéo thả. press: đã nhấn xuống quân nhưng chưa kéo đủ xa. drag: đang kéo,
+    // { sq, x, y } với x, y là toạ độ (px, trong bàn) góc trên-trái của quân.
+    // hold: quân vừa thả, giữ nguyên chỗ thả cho tới khi animateMove đưa vào ô.
+    press: null,
+    drag: null,
+    hold: null,
   };
 
   /** Ô `sq` có được vẽ thành một ô trên bàn không (ô thật, hoặc vật cản ở mode Obstacle). */
@@ -74,10 +88,92 @@ export function createBoardView({ onSquareTap, t = (key) => key }) {
     return sqIndex(b, fileOf(b, sq), r);
   };
 
+  // Sau một lần kéo thả, trình duyệt vẫn bắn sự kiện click: bỏ qua lần click đó
+  // để thả quân không bị hiểu thêm thành một lần chạm.
+  let swallowClick = false;
   el.addEventListener('click', (e) => {
+    if (swallowClick) { swallowClick = false; return; }
     const target = e.target.closest('[data-sq]');
     if (target) onSquareTap(Number(target.dataset.sq));
   });
+
+  /** Toạ độ con trỏ (px) tính từ góc trên-trái của bàn. */
+  const pointerXY = (e) => {
+    const rect = el.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  /** Ô nằm dưới điểm (x, y) trong bàn, có tính xoay; -1 nếu ngoài bàn, lỗ hoặc vật cản. */
+  view.squareAt = (x, y) => {
+    const b = view.board;
+    const col = Math.floor(x / view.cell);
+    const row = Math.floor(y / view.cell);
+    if (col < 0 || col >= b.width || row < 0 || row >= b.height) return -1;
+    const f = view.flipped ? b.width - 1 - col : col;
+    const r = view.flipped ? row : b.height - 1 - row;
+    const sq = sqIndex(b, f, r);
+    return b.squares[sq] === HOLE ? -1 : sq;
+  };
+
+  /** Đặt phần tử quân đang kéo đúng vị trí ngón tay và tô ô nằm dưới nó. */
+  const placeDragged = () => {
+    const { drag } = view;
+    const piece = view.pieces.get(drag.sq);
+    if (piece) piece.style.transform = `translate(${drag.x}px, ${drag.y}px)`;
+    const over = view.squareAt(drag.x + view.cell / 2, drag.y + view.cell / 2);
+    for (const node of el.querySelectorAll('.square.drag-over')) node.classList.remove('drag-over');
+    if (over !== -1) el.querySelector(`.square[data-sq="${over}"]`)?.classList.add('drag-over');
+  };
+
+  el.addEventListener('pointerdown', (e) => {
+    swallowClick = false;
+    if (e.button !== 0 || view.drag || !view.board) return;
+    const target = e.target.closest('.piece[data-sq]');
+    if (!target) return;
+    const sq = Number(target.dataset.sq);
+    if (!canDrag(sq)) return;
+    const { x, y } = pointerXY(e);
+    view.press = { sq, x, y, id: e.pointerId };
+  });
+
+  el.addEventListener('pointermove', (e) => {
+    const { press } = view;
+    if (view.drag) {
+      if (e.pointerId !== view.drag.id) return;
+      const { x, y } = pointerXY(e);
+      view.drag.x = x - view.cell / 2;
+      view.drag.y = y - view.cell / 2;
+      placeDragged();
+      return;
+    }
+    if (!press || e.pointerId !== press.id) return;
+    const { x, y } = pointerXY(e);
+    if (Math.hypot(x - press.x, y - press.y) < DRAG_START * view.cell) return;
+    // Đủ xa: bắt đầu kéo. Giữ con trỏ trên bàn để vẫn nhận sự kiện khi ra ngoài bàn.
+    view.press = null;
+    view.drag = { sq: press.sq, x: x - view.cell / 2, y: y - view.cell / 2, id: e.pointerId };
+    try { el.setPointerCapture(e.pointerId); } catch { /* trình duyệt cũ: bỏ qua */ }
+    onDragStart(press.sq); // nơi gọi thường render() lại; render giữ quân theo view.drag
+    placeDragged();
+  });
+
+  /** Kết thúc kéo: thả (`drop` = true) hoặc huỷ (pointercancel). */
+  const endDrag = (e, drop) => {
+    if (view.press && e.pointerId === view.press.id) view.press = null;
+    const { drag } = view;
+    if (!drag || e.pointerId !== drag.id) return;
+    view.drag = null;
+    swallowClick = true;
+    if (!drop) { onDrop(drag.sq, -1); return; }
+    const to = view.squareAt(drag.x + view.cell / 2, drag.y + view.cell / 2);
+    view.hold = { sq: drag.sq, x: drag.x, y: drag.y };
+    onDrop(drag.sq, to);
+  };
+  el.addEventListener('pointerup', (e) => endDrag(e, true));
+  el.addEventListener('pointercancel', (e) => endDrag(e, false));
+
+  /** Bỏ vị trí thả đang giữ: lần render() sau quân về đúng ô của nó. */
+  view.clearHold = () => { view.hold = null; };
 
   /**
    * Vẽ lại toàn bộ bàn theo trạng thái hiện tại.
@@ -141,9 +237,16 @@ export function createBoardView({ onSquareTap, t = (key) => key }) {
       if (p === EMPTY || p === HOLE) continue;
       const piece = makePiece(p, sq);
       if (sq === marks.selected) piece.classList.add('lifted');
+      // Quân đang kéo / vừa thả: vẽ ở chỗ ngón tay, không ở ô của nó.
+      const held = view.drag?.sq === sq ? view.drag : view.hold?.sq === sq ? view.hold : null;
+      if (held) {
+        piece.classList.add(view.drag ? 'dragging' : 'dropped');
+        piece.style.transform = `translate(${held.x}px, ${held.y}px)`;
+      }
       el.append(piece);
       view.pieces.set(sq, piece);
     }
+    if (view.drag) placeDragged();
 
     // 4. Gợi ý: bóng mờ của quân cần đi trượt từ ô đi tới ô đến, lặp lại liên tục,
     //    để người chơi THẤY nước cần đi mà không phải đọc tên ô (yêu cầu chủ dự án).
@@ -189,6 +292,12 @@ export function createBoardView({ onSquareTap, t = (key) => key }) {
     const victim = view.pieces.get(to);
     if (victim && victim !== piece) victim.classList.add('captured');
     const { x, y, row } = view.position(to);
+    // Quân vừa thả bằng kéo thả: chỉ trượt nốt đoạn ngắn từ chỗ thả vào giữa ô.
+    if (view.hold?.sq === from) {
+      view.hold = null;
+      piece.classList.remove('dropped');
+      piece.getBoundingClientRect(); // ép trình duyệt tính vị trí cũ để transition chạy
+    }
     piece.classList.remove('lifted');
     piece.style.zIndex = 40 + row;
     piece.style.transform = `translate(${x}px, ${y}px)`;

@@ -29,7 +29,8 @@ phòng thủ tốt nhất.
 | 6 | Chơi thử tự động 60 level (Node + trình duyệt), README, `docs/so-sanh.md`, chuẩn bị GitHub Pages | **Xong** |
 | 7 | Tính năng theo "Kế hoạch MKT" (artifact JXJmmH9thE6gjnq1iHES56, tab Tính năng + Kiếm tiền): kinh tế mới, Rook Pass, Starter Bundle, skin, mode Obstacle + Blitz Mate, Trophy | **Xong** |
 | 8 | Tối ưu điện thoại: thanh tab đáy, màn Mode gộp, bàn tự co; gợi ý 1 loại (bóng quân, 20 coin); 15 ngôn ngữ (mặc định EN) | **Xong** |
-| Sau | Kéo thả quân, nút "Xem lại", bộ giải sang Web Worker, chơi thử với người thật; từ kế hoạch MKT (cần máy chủ / app): Bạn cờ, bảng xếp hạng, % đạt Trophy, Classic Masters, thẻ chia sẻ Daily Mate | Chưa |
+| 8b | Kéo thả quân (Pointer Events, chuột + cảm ứng), song song với chạm-chạm | **Xong** |
+| Sau | Nút "Xem lại", bộ giải sang Web Worker, chơi thử với người thật; từ kế hoạch MKT (cần máy chủ / app): Bạn cờ, bảng xếp hạng, % đạt Trophy, Classic Masters, thẻ chia sẻ Daily Mate | Chưa |
 
 ## Cấu trúc thư mục
 
@@ -264,6 +265,13 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   `ended`: tiêu đề đổi thành "Hết nước" / "Hoà pat" / "Bị chiếu hết", toast nhắc Undo,
   vòng sáng quanh nút Undo (`.attention::after`, nút đứng yên để dễ bấm).
   Màn hình luôn vẽ lại từ dữ liệu sau animation (`drawBoard`), không giữ trạng thái riêng.
+- **Kéo thả** (board-view, Pointer Events): nhấn lên quân mà `canDrag(sq)` cho phép, kéo xa
+  hơn `DRAG_START` (0,18 cạnh ô) mới thành kéo, ngắn hơn vẫn là chạm. Bắt đầu kéo → `onDragStart`
+  (app chọn quân, hiện ô đi được); thả → `onDrop(from, to)`, `to = -1` nếu ngoài bàn/lỗ. Ô đi
+  được thì `tryMove` như chạm-chạm (quân trượt nốt từ chỗ thả vào giữa ô), không thì quân về
+  ô cũ và vẫn được chọn. Trong lúc kéo, `render()` vẫn giữ quân ở chỗ ngón tay (`view.drag`,
+  `view.hold`), nên app cứ `drawBoard()` như thường. Click bắn ra sau khi thả bị bỏ qua.
+  `.board` có `touch-action: none` để kéo không cuộn trang.
 - **Màn hình mode** (app.js): `app.mode` ∈ `main | daily | obstacle | blitz`. Obstacle:
   board-view `setStyle({obstacles: true})` vẽ ô `'x'` thành khối đá. Blitz: đồng hồ
   `BLITZ_SECONDS` = 180 giây trên dòng subtitle, nút gợi ý thành nút "Bỏ qua", ván dừng
@@ -281,7 +289,8 @@ gọi `new Date()` bên trong logic, để test cố định được ngày.
   hoặc giao diện; không nằm trong `npm test` vì chậm.
 - playtest-browser tự bật server cổng 8123, xoá localStorage, chơi 1 → 60 bằng
   bestHint, rồi kiểm tra save: 60 level, coin = 100 + 60·15 + 25, streak 1, 0 quảng cáo
-  tự hiện, hộp Starter Bundle đúng 2 lần (sau level 10 và Daily), có các Trophy chương;
+  tự hiện, hộp Starter Bundle đúng 2 lần (level chẵn chơi bằng kéo thả chuột, kèm một lần thả
+  ra ngoài bàn phải trả quân về chỗ) (sau level 10 và Daily), có các Trophy chương;
   cuối cùng mở level mate in 2 đầu tiên, chỉ bấm gợi ý + chạm ô bóng quân tới: phải thắng sau
   đúng 2 lần gợi ý và bị trừ 40 coin.
   Đổi số liệu kinh tế thì sửa con số mong đợi trong script.

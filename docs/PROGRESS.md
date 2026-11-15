@@ -1,6 +1,6 @@
 # Tiến độ dự án The Rook Chess
 
-Cập nhật: 15/11/2026, sau khi merge PR #6.
+Cập nhật: 15/11/2026, sau khi merge PR #6 và làm kéo thả quân.
 Bản chơi online: https://keivyle.github.io/the-rook-chess/ (GitHub Pages, nhánh `main`, thư mục gốc).
 
 File này ghi lại **đã làm gì, đã chốt gì, còn lại gì**. Chi tiết kỹ thuật nằm trong
@@ -21,6 +21,7 @@ nộp bài nằm trong `docs/so-sanh.md`.
 | — | Nhãn hai phía bàn: bên nào ở đâu, Tốt đi hướng nào | #4 |
 | 7 | Theo "Kế hoạch MKT": kinh tế mới, Rook Pass, Starter Bundle, skin bàn/quân, mode Obstacle + Blitz Mate, Trophy; thêm 20 level Obstacle + 40 Blitz | #5 |
 | 8 | Tối ưu điện thoại: thanh tab đáy, màn Modes gộp, bàn tự co; gợi ý một loại (bóng quân, 20 coin); 15 ngôn ngữ, mặc định tiếng Anh | #6 |
+| 8b | Kéo thả quân (chuột + cảm ứng), vẫn giữ chạm-chạm; playtest trình duyệt chơi level chẵn bằng kéo thả | (chưa mở PR) |
 
 **Kiểm thử ở thời điểm này** (đều xanh khi merge PR #6):
 - `npm test`: 120 ca, khoảng 10 giây.
@@ -74,6 +75,7 @@ tài liệu cùng lúc.
   Play · Daily · Modes · Trophies · Shop. Chạm coin mở Shop, bánh răng mở Settings.
 - Màn Modes gộp Daily, Blitz Mate, Obstacle. Không còn màn Home riêng.
 - Màn chơi cao đúng một màn hình, bàn tự co theo chỗ còn lại.
+- Đi quân bằng chạm-chạm hoặc kéo thả (cả hai luôn dùng được). Thả sai chỗ thì quân về ô cũ.
 - 15 ngôn ngữ: EN (mặc định), DE, FR, JA, ES, PT, KO, RU, ID, HI, IT, TR, ZH, PL, VI.
   Tên sản phẩm (Rook Pass, Starter Bundle, Blitz Mate, Obstacle) giữ tiếng Anh. Tài liệu
   trong repo vẫn viết tiếng Việt.
@@ -85,7 +87,6 @@ tài liệu cùng lúc.
   bảo đảm đủ khoá và đúng chỗ điền, không bảo đảm câu chữ tự nhiên.
 - **Chơi thử với người thật** trên điện thoại: xem người chơi có hiểu bóng quân gợi ý, thanh
   tab, nhãn hai phía bàn không; chỉnh độ khó và giá gợi ý theo chỗ họ bị kẹt.
-- **Kéo thả quân** (hiện chỉ chạm-chạm).
 - **Nút "Xem lại"** sau khi thắng (giữ Undo để xem lại ván), người chơi bản gốc từng muốn có.
 - **Đưa bộ giải sang Web Worker** để giao diện không khựng ở level 4 nước (lượt chậm nhất
   hiện khoảng 0,6 giây).
@@ -107,7 +108,8 @@ tài liệu cùng lúc.
 
 ### Bắt đầu phiên
 - Đọc `CLAUDE.md` trước (mô hình dữ liệu, API bộ giải, quy ước), rồi file này.
-- Nhánh làm việc là `moc-1-luat-co`. Nếu PR trước đã merge: đưa nhánh về `origin/main` mới
+- Nhánh làm việc là `moc-1-luat-co` (phiên cloud có thể được giao nhánh `claude/...` khác:
+  phần kéo thả quân nằm trên `claude/exciting-meitner-ktcoer`). Nếu PR trước đã merge: đưa nhánh về `origin/main` mới
   nhất trước khi làm tiếp (các commit cũ đã nằm trong `main`).
 - Chạy `npm test` một lần để chắc môi trường ổn (120 ca, khoảng 10 giây).
 
