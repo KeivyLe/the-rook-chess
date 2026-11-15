@@ -10,11 +10,14 @@
 // Script tự bật tools/serve.js ở cổng 8123, mở game với dữ liệu lưu trống, rồi:
 //   - chơi lần lượt level 1 → 60: mỗi lượt hỏi bộ giải nước đúng (bestHint),
 //     bấm ô đi và ô đến, chọn quân nếu phong cấp, chờ đối thủ đáp;
-//   - bấm "Level tiếp" ở màn thắng; gặp hộp mời Starter Bundle (sau level 10 và
-//     sau Daily đầu tiên) thì bấm "Để sau";
+//   - bấm "Next level" ở màn thắng; gặp hộp mời Starter Bundle (sau level 10 và
+//     sau Daily đầu tiên) thì bấm "Later";
 //   - KHÔNG được có quảng cáo nào xuất hiện (kế hoạch MKT: không quảng cáo xen giữa);
-//   - chơi Daily hôm nay qua nút Daily;
-//   - cuối cùng kiểm tra tiến trình, coin và Trophy đã lưu đúng, không có lỗi JavaScript nào.
+//   - chơi Daily hôm nay qua tab Daily ở thanh tab đáy;
+//   - kiểm tra tiến trình, coin và Trophy đã lưu đúng, không có lỗi JavaScript nào;
+//   - cuối cùng thử GỢI Ý như người chơi: mở một level mate in 2, chỉ bấm nút gợi ý
+//     rồi đi theo bóng quân; sau đúng 2 lần gợi ý phải thắng, mỗi lần trừ 20 coin.
+// Mọi nút được tìm bằng class / data-*, không theo chữ, nên chạy được ở mọi ngôn ngữ.
 // File đuôi .cjs vì Playwright được nạp bằng require().
 // =============================================================================
 
@@ -55,8 +58,7 @@ async function playCurrentLevel(page) {
     await tapSquare(page, m.from);
     await tapSquare(page, m.to);
     if (m.promotion) {
-      const name = { q: 'Hậu', r: 'Xe', b: 'Tượng', n: 'Mã' }[m.promotion];
-      await page.locator(`.promo-choice[aria-label="${name}"]`).click();
+      await page.locator(`.promo-choice[data-piece="${m.promotion}"]`).click();
     }
     await page.waitForFunction(() => !window.rookChess.busy, null, { timeout: 15000 });
   }
@@ -69,12 +71,12 @@ async function playCurrentLevel(page) {
  * có hộp Starter Bundle không.
  */
 async function continueAfterWin(page) {
-  await page.locator('.win-dialog .btn.primary').click({ timeout: 5000 });
+  await page.locator('.win-dialog .win-next').click({ timeout: 5000 });
   await sleep(250);
   const ad = (await page.locator('.ad-overlay').count()) > 0;
-  const starter = (await page.locator('.dialog h2:has-text("Starter Bundle")').count()) > 0;
+  const starter = (await page.locator('.starter-offer').count()) > 0;
   if (starter) {
-    await page.locator('button:has-text("Để sau")').click();
+    await page.locator('.starter-offer .later-btn').click();
     await sleep(250);
   }
   return { ad, starter };
@@ -119,9 +121,9 @@ async function continueAfterWin(page) {
       process.stdout.write(`level ${id} ✓ (${ms} ms)${starters.at(-1) === id ? ' + hộp Starter Bundle' : ''}\n`);
     }
 
-    // Daily qua màn chọn level.
-    await page.locator('.win-dialog .btn.primary').click({ timeout: 5000 }); // "Xong" ở level cuối
-    await page.locator('.hub-btn.daily').click();
+    // Daily qua tab Daily ở thanh tab đáy.
+    await page.locator('.win-dialog .win-next').click({ timeout: 5000 }); // "Done" ở level cuối
+    await page.locator('.tab-bar .tab-daily').click();
     await page.waitForSelector('.board .square');
     await playCurrentLevel(page);
     const afterDaily = await continueAfterWin(page);
@@ -142,6 +144,28 @@ async function continueAfterWin(page) {
       if (!trophies.includes(t)) failures.push(`chưa có Trophy ${t}`);
     }
     console.log(`Đã lưu: ${solved} level, ${save.economy.coins} coin, streak ${save.progress.daily.streak}; quảng cáo: ${ads.length}; Starter Bundle sau: ${starters.join(', ')}; Trophy: ${trophies.length}`);
+
+    // Gợi ý như người chơi: level mate in 2, chỉ bấm nút gợi ý rồi chạm ô bóng quân
+    // trượt tới (quân đã được chọn sẵn). Mate in 2 phải thắng sau đúng 2 lần gợi ý.
+    await page.locator('.win-next').click({ timeout: 5000 }); // "Done" ở hộp thắng Daily
+    const hintLevel = await page.evaluate(() => window.rookChess.data.levels.find((l) => l.mateIn === 2).id);
+    await page.evaluate((id) => window.rookChess.actions.startLevel(id), hintLevel);
+    const coinsBefore = await page.evaluate(() => window.rookChess.save.economy.coins);
+    let hints = 0;
+    while (hints < 4 && (await page.evaluate(() => window.rookChess.puzzle.state)) !== 'WON') {
+      await page.locator('.hint-btn').click();
+      await page.waitForSelector('.hint-ghost', { timeout: 15000 });
+      hints++;
+      const hint = await page.evaluate(() => window.rookChess.hint);
+      await tapSquare(page, hint.to);
+      if (hint.promotion) await page.locator(`.promo-choice[data-piece="${hint.promotion}"]`).click();
+      await page.waitForFunction(() => !window.rookChess.busy, null, { timeout: 15000 });
+    }
+    const coinsAfter = await page.evaluate(() => window.rookChess.save.economy.coins);
+    const won = (await page.evaluate(() => window.rookChess.puzzle.state)) === 'WON';
+    if (!won || hints !== 2) failures.push(`gợi ý level ${hintLevel} (mate in 2): ${hints} lần gợi ý, ${won ? 'thắng' : 'chưa thắng'}; mong đợi thắng sau 2 lần`);
+    if (coinsBefore - coinsAfter !== 40) failures.push(`2 lần gợi ý trừ ${coinsBefore - coinsAfter} coin, mong đợi 40`);
+    console.log(`Gợi ý: level ${hintLevel} thắng sau ${hints} lần bấm gợi ý, trừ ${coinsBefore - coinsAfter} coin`);
   } catch (e) {
     failures.push(`lỗi: ${e.message}`);
   } finally {

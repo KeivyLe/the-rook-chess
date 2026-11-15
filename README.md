@@ -31,21 +31,27 @@ link là `https://keivyle.github.io/the-rook-chess/`.
    chưa chiếu hết (hoặc gây hòa pat, hoặc bị đối thủ chiếu hết ngược), ván dừng lại và
    nút **Undo** sáng lên: bấm Undo để đi lại, bao nhiêu lần cũng được, tới khi thắng.
 5. Tốt tới hàng cuối thì chọn phong Hậu, Xe, Tượng hoặc Mã (có level phải phong Mã!).
-6. Bí thì bấm **bóng đèn** để mua gợi ý bằng coin, hoặc **Undo** để đi lại.
+6. Bí thì bấm **bóng đèn** (gợi ý, 20 coin một lần): một bóng mờ của quân cần đi trượt từ ô
+   đứng tới đúng ô cần đến, lặp lại liên tục, quân đó được chọn sẵn, bạn chỉ việc chạm ô đến.
+   Mỗi lần bấm chỉ chỉ **một** nước, nên level "Mate in N" cần tối đa N lần bấm là thắng.
+   Nếu bạn đã đi lệch, gợi ý tự lùi về thế còn thắng gần nhất (không tốn thêm) rồi mới chỉ.
 7. Thắng level đầu tiên được coin; không dùng gợi ý và chưa từng đi lệch thì được thêm coin.
-   Đã đi lệch thì gợi ý không dùng được (không còn nước đúng để gợi ý): hãy Undo trước.
+8. **Thanh tab ở đáy** luôn có sẵn trên mọi màn: Chơi · Daily · Mode (Daily, Blitz Mate,
+   Obstacle trên cùng một màn) · Trophy · Shop. Chạm viên coin cũng mở Shop; bánh răng mở Cài đặt.
+9. **15 ngôn ngữ**, mặc định tiếng Anh, đổi trong Cài đặt: English, Deutsch, Français, 日本語,
+   Español, Português, 한국어, Русский, Bahasa Indonesia, हिन्दी, Italiano, Türkçe, 简体中文,
+   Polski, Tiếng Việt.
 
 | | Coin |
 |---|---|
 | Khởi đầu | 100 |
 | Giải level lần đầu | +10 (thêm +5 nếu hoàn hảo) |
 | Daily Puzzle | +20 (thêm +5 nếu hoàn hảo) |
-| Gợi ý 1: tô sáng quân cần đi | −20 |
-| Gợi ý 2: hiện nước tiếp theo | −40 |
-| Gợi ý 3: toàn bộ lời giải | −100 |
+| Gợi ý (chỉ đúng 1 nước bằng hình động) | −20 |
 
-Không có quảng cáo xen giữa level. Khi bạn đã đi sai 2 lần ở một bài, bảng gợi ý có thêm
-nút **xem quảng cáo để nhận 1 gợi ý** (tối đa 1 lần mỗi ngày, không thưởng coin).
+Không có quảng cáo xen giữa level. Khi không đủ coin mà bạn đã đi sai 2 lần ở bài đang chơi,
+hộp "Không đủ coin" có thêm nút **xem quảng cáo để nhận 1 gợi ý** (tối đa 1 lần mỗi ngày,
+không thưởng coin).
 
 **Shop** (đều là **giả lập** cho bài tập, bấm mua chỉ mở khoá trong game, không có thanh toán thật):
 
@@ -79,7 +85,7 @@ Rồi mở http://localhost:8080. Điện thoại cùng mạng wifi mở `http:/
 | `npm run levels:verify` | Kiểm tra lại mọi level trong `levels.json` bằng bộ giải |
 | `npm run levels:generate` | Sinh lại `levels.json` (khoảng 3 phút; cùng seed ra cùng file) |
 | `npm run playtest` | "Người chơi máy" chơi hết 150 bài (cả 2 mode) × 3 ván, thử cả đi lệch tới khi ván dừng rồi Undo |
-| `npm run playtest:browser` | Chơi 60 level qua giao diện thật trên Chromium (cần Playwright) |
+| `npm run playtest:browser` | Chơi 60 level + Daily qua giao diện thật trên Chromium, rồi thắng một level mate in 2 chỉ bằng 2 lần bấm gợi ý (cần Playwright) |
 
 ## Cấu trúc code
 
@@ -101,6 +107,7 @@ src/
   progress.js         mở khoá level, Daily theo ngày, chuỗi ngày (streak)
   storage.js          lưu/đọc tiến trình (localStorage, chịu lỗi)
   ui/                 giao diện: vẽ bàn, quân cờ SVG, âm thanh Web Audio, các màn hình
+  ui/i18n.js, ui/i18n/ 15 ngôn ngữ (mỗi ngôn ngữ một file, cùng bộ khoá với en.js)
 tools/
   generate-levels.js  sinh thế cờ ngẫu nhiên → lọc bằng bộ giải → bỏ quân thừa → xếp độ khó
   verify-levels.js    kiểm tra levels.json

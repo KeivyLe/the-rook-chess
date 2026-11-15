@@ -21,7 +21,7 @@ async function main() {
     root.innerHTML = '';
     const p = document.createElement('p');
     p.className = 'loading';
-    p.textContent = `Không tải được levels.json (${e.message}). Hãy chạy "npm start" rồi mở http://localhost:8080.`;
+    p.textContent = `Could not load levels.json (${e.message}). Run "npm start" and open http://localhost:8080.`;
     root.append(p);
   }
 }

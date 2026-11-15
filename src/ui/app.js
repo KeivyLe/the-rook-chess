@@ -250,6 +250,9 @@ export function startApp(root, data) {
   /** Bắt đầu level chính `id`. */
   function startLevel(id) {
     abandonBlitz();
+    // Level còn khoá (chỉ xảy ra khi gọi từ ngoài, ví dụ window.rookChess khi kiểm thử):
+    // mở level đang chơi dở thay vì để lúc thắng mới báo lỗi "chưa mở".
+    if (levelStatus(app.save.progress, id) === 'locked') id = currentLevel(app.save.progress, totalLevels);
     app.mode = 'main';
     app.previewSkin = null;
     openPuzzle(data.levels[id - 1], themeForLevel(id));
@@ -467,6 +470,7 @@ export function startApp(root, data) {
       const choice = (k) => h('button', {
         class: 'promo-choice',
         'aria-label': t(`piece.${k}`),
+        'data-piece': k, // mã quân (q/r/b/n), để script chơi thử bấm được ở mọi ngôn ngữ
         onclick: () => { chosen = k; close(); },
       }, h('span', { class: 'promo-piece', html: pieceSvg(color === 'w' ? k.toUpperCase() : k, skin) }));
       const close = openOverlay(
@@ -646,7 +650,7 @@ export function startApp(root, data) {
         class: 'sheet-option pass-option',
         onclick: () => { close(); showShop(); },
       }, h('span', { class: 'opt-text' }, h('strong', {}, t('pass.name')), h('small', {}, t('hint.passNote'))),
-      h('span', { class: 'price' }, PRODUCTS['rook-pass'].price))), { cls: 'sheet-overlay' });
+      h('span', { class: 'price' }, t('pass.price', { price: PRODUCTS['rook-pass'].price })))), { cls: 'sheet-overlay' });
   }
 
   /** Xem xong rewarded: trừ lượt hôm nay và hiện gợi ý miễn phí. */
@@ -1036,7 +1040,7 @@ export function startApp(root, data) {
     const refresh = () => { const y = window.scrollY; showShop(); window.scrollTo(0, y); };
 
     const passCard = h('div', { class: 'shop-card pass-card' },
-      h('div', { class: 'card-head' }, icon('crown'), h('strong', {}, t('pass.name')), h('span', { class: 'price' }, PRODUCTS['rook-pass'].price)),
+      h('div', { class: 'card-head' }, icon('crown'), h('strong', {}, t('pass.name')), h('span', { class: 'price' }, t('pass.price', { price: PRODUCTS['rook-pass'].price }))),
       h('ul', {}, h('li', {}, t('pass.b1')), h('li', {}, t('pass.b2')), h('li', {}, t('pass.b3')), h('li', {}, t('pass.b4'))),
       pass ? h('p', { class: 'status' }, t('pass.active', { n: passDaysLeft(s, day) })) : null,
       h('div', { class: 'dialog-row' },

@@ -47,10 +47,12 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
 |---|---|
 | Đi một nước đúng nhưng khác đáp án lưu sẵn thì bị báo sai | Không so với đáp án, và **không báo sai** gì cả: ván cứ tiếp tục, đối thủ vẫn đáp, chỉ chiếu hết thật mới thắng. Mọi cách chiếu hết đều được tính (có test riêng: level có hai cách chiếu hết ở nước cuối, cả hai đều thắng). Đi lệch tới khi ván dừng thì người chơi tự Undo, không giới hạn số lần. Đây là thay đổi so với GDD mục 3.4 (vốn đề xuất báo sai rồi tự lùi nước): người chơi tự nhận ra mình sai khi đối thủ thoát, giống chơi cờ thật hơn. |
 | Bấm gợi ý sau khi đã đi đúng nước đầu, game lùi về và gợi ý lại nước người chơi đã biết | Gợi ý luôn tính từ thế cờ **hiện tại** (có test riêng cho gợi ý giữa ván). |
-| Gợi ý quá đắt so với coin kiếm được, cảm giác bị ép mua | 3 mức gợi ý rõ giá: 20 / 40 / 100 coin, người chơi kiếm 10–15 coin mỗi level, bắt đầu với 100 coin. Bí quá (đã sai 2 lần ở một bài) thì được xem 1 quảng cáo đổi 1 gợi ý miễn phí mỗi ngày. Rook Pass cho gợi ý không giới hạn. |
+| Gợi ý quá đắt so với coin kiếm được, cảm giác bị ép mua | Chỉ **một** loại gợi ý, 20 coin: bóng mờ của quân cần đi trượt tới đúng ô cần đến (không bắt người chơi đọc tên ô như "c3"), quân được chọn sẵn. Mate in N thì tối đa N lần bấm là thắng. Đã đi lệch thì gợi ý tự lùi về thế còn thắng rồi mới chỉ. Người chơi kiếm 10–15 coin mỗi level, bắt đầu với 100 coin. Hết coin mà đã sai 2 lần ở một bài thì được xem 1 quảng cáo đổi 1 gợi ý mỗi ngày. Rook Pass cho gợi ý không giới hạn. |
+| Tính năng nằm sâu trong menu, phải tìm | Thanh tab cố định ở đáy mọi màn (Chơi · Daily · Mode · Trophy · Shop), chấm đỏ báo Daily chưa giải; Daily, Blitz, Obstacle gộp chung một màn Mode. Thiết kế cho điện thoại một tay: bàn cờ tự co vừa phần màn hình còn lại, không phải cuộn. |
+| Chỉ có vài ngôn ngữ | 15 ngôn ngữ (mặc định tiếng Anh), có test bảo đảm ngôn ngữ nào cũng đủ chữ; số nhiều đúng ngữ pháp (tiếng Nga, Ba Lan). |
 | Quảng cáo quá dày, giữa các level khoảng mỗi 1–2 level | Theo kế hoạch MKT: **không có** quảng cáo xen giữa level, không banner. Quảng cáo duy nhất là rewarded do người chơi tự bấm, tối đa 1 lần/ngày. Chơi thử tự động 60 level xác nhận 0 quảng cáo tự hiện. |
 | Nút đóng quảng cáo khó bấm, dễ bấm nhầm vào quảng cáo | Nút nhận thưởng to, rộng hết hộp, đặt ở dưới cùng; hết 5 giây mới bấm được. |
-| Kiểu khuyến mãi gấp ("giảm 50% trong thời gian có hạn") | Không giảm giá gấp, không đồng hồ đếm ngược. Ngoại lệ duy nhất theo kế hoạch MKT là Starter Bundle chỉ bán 7 ngày đầu sau khi cài: game mời đúng 2 lần (sau Daily đầu tiên và sau level 10), bấm "Để sau" là thôi, vẫn mua được trong Shop tới hết hạn. |
+| Kiểu khuyến mãi gấp ("giảm 50% trong thời gian có hạn") | Không giảm giá gấp, không đồng hồ đếm ngược. Ngoại lệ duy nhất theo kế hoạch MKT là Starter Bundle chỉ bán 7 ngày đầu sau khi cài: game mời đúng 2 lần (sau Daily đầu tiên và sau level 10), bấm "Later" ("Để sau") là thôi, vẫn mua được trong Shop tới hết hạn. |
 | Quảng cáo làm tắt nhạc của app khác | Không có nhạc nền; âm thanh hiệu ứng tổng hợp bằng Web Audio và tắt được trong Cài đặt. |
 | Bị kẹt ở level khó, độ khó tăng đột ngột | Chương 1–4 tăng dần số nước; trong mỗi chương level được chấm điểm khó tự động rồi xếp **răng cưa**: cứ 3 level thì chèn 1 level dễ để nghỉ. 5 level đầu giới thiệu từng quân. |
 | Puzzle bị lỗi (ví dụ "puzzle bị hòa pat") | Mọi level qua kiểm tra tự động: thế cờ hợp lệ, chiếu hết **đúng** N nước, không có cách chiếu hết sớm hơn, nước đầu duy nhất. Gây hòa pat thì ván dừng với tiêu đề "Hoà pat" và nhắc bấm Undo. |
@@ -86,7 +88,7 @@ nói về bản gốc ở dưới đều chỉ dựa trên những nguồn đó.
   mode, Trophy, tiến trình, lưu game (kể cả chuyển save cũ).
 - `npm run playtest`: máy chơi 150 bài (level chính, Daily, Obstacle, Blitz) × 3 ván, đối thủ chọn ngẫu nhiên giữa các nước
   phòng thủ tốt nhất, thử cả đi lệch (ván phải tiếp tục rồi dừng mà không thắng, Undo về
-  đầu phải như mới), Undo, gợi ý mức 3. Kết quả 450/450 ván thắng đúng hạn, 0 lỗi. Lượt
+  đầu phải như mới), Undo, gợi ý toàn bộ lời giải. Kết quả 450/450 ván thắng đúng hạn, 0 lỗi. Lượt
   chậm nhất của bộ giải là khoảng 0,9 giây (level 60, mate in 4).
 - `npm run playtest:browser`: chơi 60 level liên tục qua giao diện thật trên Chromium, bấm
   chuột như người thật, rồi chơi Daily. 0 lỗi JavaScript; coin, tiến trình, streak, Trophy
