@@ -147,7 +147,7 @@ async function continueAfterWin(page) {
 
     // Gợi ý như người chơi: level mate in 2, chỉ bấm nút gợi ý rồi chạm ô bóng quân
     // trượt tới (quân đã được chọn sẵn). Mate in 2 phải thắng sau đúng 2 lần gợi ý.
-    await page.locator('.win-next').click({ timeout: 5000 }); // "Done" ở hộp thắng Daily
+    // (Hộp thắng Daily đã được đóng trong continueAfterWin ở trên.)
     const hintLevel = await page.evaluate(() => window.rookChess.data.levels.find((l) => l.mateIn === 2).id);
     await page.evaluate((id) => window.rookChess.actions.startLevel(id), hintLevel);
     const coinsBefore = await page.evaluate(() => window.rookChess.save.economy.coins);
